@@ -29,8 +29,18 @@ contract Agent {
         uint256 expiration;    // Timestamp when delegation expires
     }
 
-    // Mapping to store active delegations per delegator
-    mapping(address => Delegation) public delegations;
+    // Mapping to store active delegations per delegator (internal for encapsulation)
+    mapping(address => Delegation) internal delegations;
+
+    // Public getter to return full delegation struct for queries
+    function getDelegation(address _delegator) external view returns (Delegation memory) {
+        return delegations[_delegator];
+    }
+
+    // Temp function for testing delegation storage (remove in production)
+    function _setDelegation(address _delegator, Delegation memory _del) external {
+        delegations[_delegator] = _del;  // Direct write to internal mapping
+    }
 
     event ThresholdSet(address indexed user, uint256 threshold);
 

@@ -44,12 +44,12 @@ contract AgentTest is Test {
         assertEq(agent.getGasThreshold(user), 50);
     }
 
-    function testGetGasThreshold_ReturnsZeroForUnsetUser() public {
+    function testGetGasThreshold_ReturnsZeroForUnsetUser() public view {
         address unsetUser = address(0x456);
         assertEq(agent.getGasThreshold(unsetUser), 0);  // Default mapping value
     }
 
-    function testStoreDelegation_SetsCorrectly() public {
+        function testStoreDelegation_SetsCorrectly() public {
         address delegator = address(0xABC);
         Agent.Caveat[] memory caveats = new Agent.Caveat[](1);
         caveats[0] = Agent.Caveat({enforcer: address(0xDEF), data: abi.encode(50)});
@@ -57,16 +57,15 @@ contract AgentTest is Test {
         Agent.Delegation memory del = Agent.Delegation({
             delegator: delegator,
             delegatee: address(agent),
-            authority: keccak256("root"),
+            authority: keccak256(abi.encode("root")),  // Proper hash for authority
             caveats: caveats,
             salt: 1,
             expiration: block.timestamp + 1 days
         });
 
-        // Temp setter for testing storage (remove in production)
-        agent.delegations[delegator] = del;
+        agent._setDelegation(delegator, del);  // Use setter for assignment
 
-        Agent.Delegation memory stored = agent.delegations(delegator);
+        Agent.Delegation memory stored = agent.getDelegation(delegator);  // Use explicit getter
         assertEq(stored.delegator, delegator);
         assertEq(stored.delegatee, address(agent));
         assertEq(stored.caveats[0].enforcer, address(0xDEF));
@@ -75,7 +74,7 @@ contract AgentTest is Test {
 
     function testStoreDelegation_DefaultsToEmpty() public view {
         address unset = address(0x999);
-        Agent.Delegation memory del = agent.delegations(unset);
+        Agent.Delegation memory del = agent.getDelegation(unset);  // Use explicit getter
         assertEq(del.delegator, address(0));  // Defaults to zero/empty
         assertEq(del.caveats.length, 0);
     }
