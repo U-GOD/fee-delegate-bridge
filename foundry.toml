@@ -3,6 +3,7 @@ src = "src"
 out = "out"
 libs = ["lib"]
 via_ir = true
-lint = false  # Skip linting for CI (or ignore asm-keccak256)
+# lint omitted—defaults to all lints enabled; add struct if needed, e.g.:
+# lint = { ignore = ["asm-keccak256"] }  # Ignore inefficient hash lints in redeemDelegation
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
