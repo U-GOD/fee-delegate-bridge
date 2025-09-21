@@ -78,4 +78,90 @@ contract AgentTest is Test {
         assertEq(del.delegator, address(0));  // Defaults to zero/empty
         assertEq(del.caveats.length, 0);
     }
+
+    function testRedeemDelegation_StoresAndVerifies() public {
+        uint256 privateKey = 0x123;  // Mock private key
+        address delegator = vm.addr(privateKey);  // Derive delegator from key for sig match
+        Agent.Caveat[] memory caveats = new Agent.Caveat[](0);  // Empty array to simplify ABI encoding for hash match
+
+        Agent.Delegation memory del = Agent.Delegation({
+            delegator: delegator,  // Matches derived address
+            delegatee: address(agent),
+            authority: keccak256(abi.encodePacked("root")),  // Fixed bytes32 hash for consistency
+            caveats: caveats,
+            salt: 1,
+            expiration: block.timestamp + 1 days
+        });
+
+        // Mock signature from delegator on payload hash (matches contract's abi.encode)
+        bytes32 payloadHash = keccak256(abi.encode(del));
+        bytes32 ethHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", payloadHash));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ethHash);
+        bytes memory sig = abi.encodePacked(r, s, v);
+
+        // Expect event before call (single check to avoid log mismatch)
+        vm.expectEmit(true, true, false, true);
+        emit Agent.DelegationRedeemed(delegator, address(agent), del.authority);  // Qualified for test context
+
+        // Prank as frontend caller to redeem
+        vm.prank(address(0x1234567890123456789012345678901234567890));
+        agent.redeemDelegation(del, sig);
+
+        // Assert stored after successful redemption (confirms no revert, sig verified)
+        Agent.Delegation memory stored = agent.getDelegation(delegator);
+        assertEq(stored.delegator, delegator);
+        assertEq(stored.salt, 1);
+        assertEq(stored.expiration, del.expiration);  // Verify full struct stored
+    }
+
+    function testRedeemDelegation_RevertsInvalidSig() public {
+        address delegator = address(0xABC);
+        Agent.Caveat[] memory caveats = new Agent.Caveat[](1);
+        caveats[0] = Agent.Caveat({enforcer: address(0xDEF), data: abi.encode(50)});
+
+        Agent.Delegation memory del = Agent.Delegation({
+            delegator: delegator,
+            delegatee: address(agent),
+            authority: keccak256(abi.encode("root")),
+            caveats: caveats,
+            salt: 1,
+            expiration: block.timestamp + 1 days
+        });
+
+        // Invalid sig (wrong private key)
+        bytes32 payloadHash = keccak256(abi.encode(del));
+        bytes32 ethHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", payloadHash));
+        uint256 wrongKey = 0x456;
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(wrongKey, ethHash);
+        bytes memory sig = abi.encodePacked(r, s, v);
+
+        vm.prank(address(0x1234567890123456789012345678901234567890));
+        vm.expectRevert("Invalid signature");
+        agent.redeemDelegation(del, sig);
+    }
+
+    function testRedeemDelegation_RevertsExpired() public {
+        address delegator = address(0xABC);
+        Agent.Caveat[] memory caveats = new Agent.Caveat[](0);  // Empty for simple
+
+        Agent.Delegation memory del = Agent.Delegation({
+            delegator: delegator,
+            delegatee: address(agent),
+            authority: keccak256(abi.encode("root")),
+            caveats: caveats,
+            salt: 1,
+            expiration: block.timestamp - 1  // Expired
+        });
+
+        // Mock valid sig but expired
+        bytes32 payloadHash = keccak256(abi.encode(del));
+        bytes32 ethHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", payloadHash));
+        uint256 privateKey = 0x123;
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ethHash);
+        bytes memory sig = abi.encodePacked(r, s, v);
+
+        vm.prank(address(0x1234567890123456789012345678901234567890));
+        vm.expectRevert("Delegation expired");
+        agent.redeemDelegation(del, sig);
+    }
 }
