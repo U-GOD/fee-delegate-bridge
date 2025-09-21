@@ -76,4 +76,4 @@ MIT License. See LICENSE file.
 
 ## Acknowledgments
 
-Built with ❤️ for the MetaMask x Monad hackathon. Inspired by MetaMask Delegation Toolkit docs.
+Built with ❤️ for the MetaMask x Monad hackathon. Inspired by MetaMask Delegation Toolkit docs. 
