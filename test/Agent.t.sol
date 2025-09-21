@@ -10,15 +10,15 @@ contract AgentTest is Test {
     Agent public agent;
 
     function setUp() public {
-        agent = new Agent();  // Deploy the contract in each test
+        agent = new Agent(); // Deploy the contract in each test
     }
 
     function testConstructor_SetsOwnerCorrectly() public view {
-        assertEq(agent.owner(), address(this));  // Owner should be the test contract (deployer)
+        assertEq(agent.owner(), address(this)); // Owner should be the test contract (deployer)
     }
 
     function testSetGasThreshold_UpdatesValue() public {
-        address user = address(0x123);  // Simulate a user
+        address user = address(0x123); // Simulate a user
         vm.prank(user);
         agent.setGasThreshold(50);
         assertEq(agent.gasThresholds(user), 50);
@@ -27,8 +27,8 @@ contract AgentTest is Test {
     function testSetGasThreshold_EmitsEvent() public {
         address user = address(0x123);
         vm.prank(user);
-        vm.expectEmit(true, true, false, true);  // Check indexed topics and data
-        emit Agent.ThresholdSet(user, 50);  // Qualified event name to resolve in test context
+        vm.expectEmit(true, true, false, true); // Check indexed topics and data
+        emit Agent.ThresholdSet(user, 50); // Qualified event name to resolve in test context
         agent.setGasThreshold(50);
     }
 
@@ -40,16 +40,16 @@ contract AgentTest is Test {
     function testGetGasThreshold_ReturnsCorrectValue() public {
         address user = address(0x123);
         vm.prank(user);
-        agent.setGasThreshold(50);  // Set first to test read
+        agent.setGasThreshold(50); // Set first to test read
         assertEq(agent.getGasThreshold(user), 50);
     }
 
     function testGetGasThreshold_ReturnsZeroForUnsetUser() public view {
         address unsetUser = address(0x456);
-        assertEq(agent.getGasThreshold(unsetUser), 0);  // Default mapping value
+        assertEq(agent.getGasThreshold(unsetUser), 0); // Default mapping value
     }
 
-        function testStoreDelegation_SetsCorrectly() public {
+    function testStoreDelegation_SetsCorrectly() public {
         address delegator = address(0xABC);
         Agent.Caveat[] memory caveats = new Agent.Caveat[](1);
         caveats[0] = Agent.Caveat({enforcer: address(0xDEF), data: abi.encode(50)});
@@ -57,15 +57,15 @@ contract AgentTest is Test {
         Agent.Delegation memory del = Agent.Delegation({
             delegator: delegator,
             delegatee: address(agent),
-            authority: keccak256(abi.encode("root")),  // Proper hash for authority
+            authority: keccak256(abi.encode("root")), // Proper hash for authority
             caveats: caveats,
             salt: 1,
             expiration: block.timestamp + 1 days
         });
 
-        agent._setDelegation(delegator, del);  // Use setter for assignment
+        agent._setDelegation(delegator, del); // Use setter for assignment
 
-        Agent.Delegation memory stored = agent.getDelegation(delegator);  // Use explicit getter
+        Agent.Delegation memory stored = agent.getDelegation(delegator); // Use explicit getter
         assertEq(stored.delegator, delegator);
         assertEq(stored.delegatee, address(agent));
         assertEq(stored.caveats[0].enforcer, address(0xDEF));
@@ -74,20 +74,20 @@ contract AgentTest is Test {
 
     function testStoreDelegation_DefaultsToEmpty() public view {
         address unset = address(0x999);
-        Agent.Delegation memory del = agent.getDelegation(unset);  // Use explicit getter
-        assertEq(del.delegator, address(0));  // Defaults to zero/empty
+        Agent.Delegation memory del = agent.getDelegation(unset); // Use explicit getter
+        assertEq(del.delegator, address(0)); // Defaults to zero/empty
         assertEq(del.caveats.length, 0);
     }
 
     function testRedeemDelegation_StoresAndVerifies() public {
-        uint256 privateKey = 0x123;  // Mock private key
-        address delegator = vm.addr(privateKey);  // Derive delegator from key for sig match
-        Agent.Caveat[] memory caveats = new Agent.Caveat[](0);  // Empty array to simplify ABI encoding for hash match
+        uint256 privateKey = 0x123; // Mock private key
+        address delegator = vm.addr(privateKey); // Derive delegator from key for sig match
+        Agent.Caveat[] memory caveats = new Agent.Caveat[](0); // Empty array to simplify ABI encoding for hash match
 
         Agent.Delegation memory del = Agent.Delegation({
-            delegator: delegator,  // Matches derived address
+            delegator: delegator, // Matches derived address
             delegatee: address(agent),
-            authority: keccak256(abi.encodePacked("root")),  // Fixed bytes32 hash for consistency
+            authority: keccak256(abi.encodePacked("root")), // Fixed bytes32 hash for consistency
             caveats: caveats,
             salt: 1,
             expiration: block.timestamp + 1 days
@@ -101,7 +101,7 @@ contract AgentTest is Test {
 
         // Expect event before call (single check to avoid log mismatch)
         vm.expectEmit(true, true, false, true);
-        emit Agent.DelegationRedeemed(delegator, address(agent), del.authority);  // Qualified for test context
+        emit Agent.DelegationRedeemed(delegator, address(agent), del.authority); // Qualified for test context
 
         // Prank as frontend caller to redeem
         vm.prank(address(0x1234567890123456789012345678901234567890));
@@ -111,7 +111,7 @@ contract AgentTest is Test {
         Agent.Delegation memory stored = agent.getDelegation(delegator);
         assertEq(stored.delegator, delegator);
         assertEq(stored.salt, 1);
-        assertEq(stored.expiration, del.expiration);  // Verify full struct stored
+        assertEq(stored.expiration, del.expiration); // Verify full struct stored
     }
 
     function testRedeemDelegation_RevertsInvalidSig() public {
@@ -142,7 +142,7 @@ contract AgentTest is Test {
 
     function testRedeemDelegation_RevertsExpired() public {
         address delegator = address(0xABC);
-        Agent.Caveat[] memory caveats = new Agent.Caveat[](0);  // Empty for simple
+        Agent.Caveat[] memory caveats = new Agent.Caveat[](0); // Empty for simple
 
         Agent.Delegation memory del = Agent.Delegation({
             delegator: delegator,
@@ -150,7 +150,7 @@ contract AgentTest is Test {
             authority: keccak256(abi.encode("root")),
             caveats: caveats,
             salt: 1,
-            expiration: block.timestamp - 1  // Expired
+            expiration: block.timestamp - 1 // Expired
         });
 
         // Mock valid sig but expired
