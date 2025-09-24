@@ -47,6 +47,15 @@ export default function Home() {
 
   if (!isMounted) {
     return <div>Loading...</div>;  // Server/client placeholder to avoid mismatch
+    {isConnected && (
+      <div style={{ marginBottom: '20px' }}>
+        <input type="number" placeholder="Gas threshold (gwei)" value={threshold} onChange={(e) => setThreshold(e.target.value)} style={{ padding: '5px', marginRight: '10px' }} />
+        <button onClick={handleSetThreshold} style={{ padding: '10px' }}>
+          Set Threshold
+        </button>
+      </div>
+    )}
+    <p style={{ marginTop: '10px' }}>{status}</p>
   }
 
   return (
