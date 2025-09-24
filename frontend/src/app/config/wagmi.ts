@@ -11,6 +11,15 @@ import { http } from 'viem';
 //   nativeCurrency: { name: 'Monad', symbol: 'MONAD', decimals: 18 },
 // });
 
+// // Wagmi config (Monad chain, MetaMask connector, RPC transport, disable auto-connect)
+// export const config = createConfig({
+//   chains: [monadTestnet],
+//   connectors: [injected()],
+//   transports: { [monadTestnet.id]: http() },
+//   autoConnect: false,  // Disable auto-connect—require button click
+//   ssr: true,  // Enable SSR support for initial state matching
+// });
+
 // Define Base Sepolia testnet chain (EVM-compatible alternative to Monad for easy tokens)
 export const baseSepolia = defineChain({
   id: 84532,
@@ -19,11 +28,11 @@ export const baseSepolia = defineChain({
   nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
 });
 
-// Wagmi config (Monad chain, MetaMask connector, RPC transport, disable auto-connect)
+// Wagmi config (Base Sepolia chain, MetaMask connector, RPC transport, disable auto-connect)
 export const config = createConfig({
-  chains: [monadTestnet],
+  chains: [baseSepolia],  // Use baseSepolia instead of monadTestnet
   connectors: [injected()],
-  transports: { [monadTestnet.id]: http() },
+  transports: { [baseSepolia.id]: http() },  // Use baseSepolia.id
   autoConnect: false,  // Disable auto-connect—require button click
   ssr: true,  // Enable SSR support for initial state matching
 });
