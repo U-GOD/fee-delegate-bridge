@@ -1,21 +1,17 @@
 'use client';  // Client component for hooks (runs on browser)
 
-import { useEffect, useState } from 'react';
-import { useAccount, useConnect } from 'wagmi';
-import { injected } from 'wagmi/connectors';  // Factory for MetaMask connector
-import { useWalletClient } from 'wagmi';  // Hook for viem client (tx sending)
+import { useState } from 'react';  // useState for input/status
+import { useAccount, useWalletClient } from 'wagmi';  // useAccount for isConnected/address, useWalletClient for txs
+import { ConnectButton } from '@rainbow-me/rainbowkit';  // RainbowKit connect UI
 
 export default function Home() {
-  const { address, isConnected, isConnecting } = useAccount();  // Hook for wallet status, address, connecting state
-  const { connect } = useConnect({ connector: injected() });  // Hook to trigger MetaMask connect
-  const [isMounted, setIsMounted] = useState(false);  // State to delay render until client-mounted (fixes hydration)
-
-  const [threshold, setThreshold] = useState('');  // State for input value
+  const { address, isConnected } = useAccount();  // Hook for wallet status and address (from RainbowKit/Wagmi)
   const { data: walletClient } = useWalletClient();  // Hook for viem client (txs)
+  const [threshold, setThreshold] = useState('');  // State for input value
   const [status, setStatus] = useState('');  // State for feedback (tx/error)
 
-  const agentAddress = '0x9b52dF03bbB3B20dDcb793100984425eD80ac5fD';  // Replace with deployed agent (from forge create)
-  const agentAbi = [  // Minimal ABI for setGasThreshold (match contract)
+  const agentAddress = '0x9b52dF03bbB3B20dDcb793100984425eD80ac5fD';  // Deployed agent on Base Sepolia
+  const agentAbi = [  // Minimal ABI for setGasThreshold (match contract from Phase 1)
     {
       name: 'setGasThreshold',
       type: 'function',
@@ -33,7 +29,7 @@ export default function Home() {
         address: agentAddress,
         abi: agentAbi,
         functionName: 'setGasThreshold',
-        args: [BigInt(threshold)],  // Convert to BigInt for Solidity uint256
+        args: [BigInt(threshold)],  // Convert string input to BigInt for Solidity uint256
       });
       setStatus(`Threshold set! Tx: ${hash}`);
     } catch (error) {
@@ -41,29 +37,24 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    setIsMounted(true);  // Set true after mount—ensures client-only render
-  }, []);
-
-  if (!isMounted) {
-    return <div>Loading...</div>;  // Server/client placeholder to avoid mismatch
-    {isConnected && (
-      <div style={{ marginBottom: '20px' }}>
-        <input type="number" placeholder="Gas threshold (gwei)" value={threshold} onChange={(e) => setThreshold(e.target.value)} style={{ padding: '5px', marginRight: '10px' }} />
-        <button onClick={handleSetThreshold} style={{ padding: '10px' }}>
-          Set Threshold
-        </button>
-      </div>
-    )}
-    <p style={{ marginTop: '10px' }}>{status}</p>
-  }
-
   return (
-    <div style={{ padding: '20px' }}>
-      <h1 style={{ fontSize: '24px', marginBottom: '20px' }}>FeeDelegate Bridge</h1>
-      <button onClick={() => connect()} style={{ padding: '10px', marginBottom: '10px' }}>
-        {isConnecting ? 'Connecting...' : isConnected ? `Connected: ${address?.slice(0, 6)}...${address?.slice(-4)}` : 'Connect MetaMask'}  // Button text changes on connect/loading
-      </button>
-    </div>
+    <main className="p-8">
+      <h1 className="text-2xl font-bold mb-4">FeeDelegate Bridge</h1>
+      
+      {/* Simple Connect Button */}
+      <ConnectButton />
+
+      {isConnected && (
+        <div style={{ marginBottom: '20px' }}>
+          <input type="number" placeholder="Gas threshold (gwei)" value={threshold} onChange={(e) => setThreshold(e.target.value)} style={{ padding: '5px', marginRight: '10px' }} />
+          <button onClick={handleSetThreshold} style={{ padding: '10px' }}>
+            Set Threshold
+          </button>
+        </div>
+      )}
+      <p style={{ marginTop: '10px' }}>{status}</p>
+      
+      <p className="mt-4">Connect your wallet to get started!</p>
+    </main>
   );
 }

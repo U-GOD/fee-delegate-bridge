@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@metamask/delegation-toolkit": "^0.13.0",
+    "@rainbow-me/rainbowkit": "^2.2.8",
     "@tanstack/react-query": "^5.90.1",
     "next": "15.5.3",
     "permissionless": "^0.2.57",

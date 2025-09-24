@@ -1,13 +1,10 @@
 import './globals.css';  // Import default resets
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';  // Default font
-import Providers from './Providers';  // Client wrapper for Wagmi (create next)
-
-const inter = Inter({ subsets: ['latin'] });  // Font setup for basic styling
+import Providers from './Providers';  // Client wrapper for Wagmi
 
 export const metadata: Metadata = {
   title: 'FeeDelegate Bridge',  // Customized title for app tab
-  description: 'Delegation-based fee minimizer on Monad',
+  description: 'Delegation-based fee minimizer on Base Sepolia',
 };
 
 export default function RootLayout({
@@ -15,7 +12,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body>
         {/* Providers wraps the app with WagmiProvider—client-only to avoid SSR errors */}
         <Providers>{children}</Providers>
       </body>
