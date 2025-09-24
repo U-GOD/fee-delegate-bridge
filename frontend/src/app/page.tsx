@@ -14,7 +14,7 @@ export default function Home() {
   const { data: walletClient } = useWalletClient();  // Hook for viem client (txs)
   const [status, setStatus] = useState('');  // State for feedback (tx/error)
 
-  const agentAddress = '0xYourDeployedAgentAddress';  // Replace with deployed agent (from forge create)
+  const agentAddress = '0x9b52dF03bbB3B20dDcb793100984425eD80ac5fD';  // Replace with deployed agent (from forge create)
   const agentAbi = [  // Minimal ABI for setGasThreshold (match contract)
     {
       name: 'setGasThreshold',
