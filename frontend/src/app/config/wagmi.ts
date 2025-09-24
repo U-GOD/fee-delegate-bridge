@@ -11,9 +11,11 @@ export const monadTestnet = defineChain({
   nativeCurrency: { name: 'Monad', symbol: 'MONAD', decimals: 18 },
 });
 
-// Wagmi config (Monad chain, MetaMask connector, RPC transport)
+// Wagmi config (Monad chain, MetaMask connector, RPC transport, disable auto-connect)
 export const config = createConfig({
   chains: [monadTestnet],
-  connectors: [injected()],  // Connector for MetaMask
+  connectors: [injected()],
   transports: { [monadTestnet.id]: http() },
+  autoConnect: false,  // Disable auto-connect—require button click
+  ssr: true,  // Enable SSR support for initial state matching
 });
