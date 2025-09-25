@@ -77,5 +77,7 @@ MIT License. See LICENSE file.
 ## Acknowledgments
 
 Built with ❤️ for the MetaMask x Monad hackathon. Inspired by MetaMask Delegation Toolkit docs. 
+
 Deployed Agent: 0x9b52dF03bbB3B20dDcb793100984425eD80ac5fD on Base Sepolia (tx :0xe8d4dfca3765ff9b91422b34d50d9ff4928db6b7d721531e712da941aba43f32)
+
 Switched to Monad testnet - Agent: 0xa5262b3CF38fA74010A3873974b17EF53b81deE3 (tx: 0x6641eb1b7cd32ecd1536e18380a302cf4e8715d0cc555039a73a8619e71d15e1)
