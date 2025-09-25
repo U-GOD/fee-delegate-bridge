@@ -3,11 +3,41 @@
 // src/Agent.sol
 pragma solidity ^0.8.20;
 
+// Interface for Chainlink oracle (standard for gas/price feeds—enables external contract calls like any address).
+interface AggregatorV3Interface {
+    function decimals() external view returns (uint8);
+
+    function description() external view returns (string memory);
+
+    function version() external view returns (uint256);
+
+    function getRoundData(uint80 _roundId) external view returns (
+        uint80 roundId,
+        int256 answer,
+        uint256 startedAt,
+        uint256 updatedAt,
+        uint80 answeredInRound
+    );
+
+    function latestRoundData() external view returns (
+        uint80 roundId,
+        int256 answer,
+        uint256 startedAt,
+        uint256 updatedAt,
+        uint80 answeredInRound
+    );
+}
+
 contract Agent {
     address public owner; // Contract owner for access control in future phases
 
-    constructor() {
-        owner = msg.sender; // Set deployer as owner on initialization
+    // Chainlink gas feed proxy—configurable for chains (e.g., Sepolia ETH proxy for Monad testnet sim).
+    AggregatorV3Interface public immutable gasOracle;
+
+    // Constructor: Initializes owner and oracle (pass proxy addr on deploy for chain flexibility).
+    constructor(address _gasOracle) {
+        owner = msg.sender;
+        gasOracle = AggregatorV3Interface(_gasOracle);
     }
 
     // Mapping for user-specific gas thresholds to enable personalized automation
