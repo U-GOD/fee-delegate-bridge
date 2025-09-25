@@ -96,4 +96,18 @@ contract Agent {
     function getGasThreshold(address _user) external view returns (uint256) {
         return gasThresholds[_user]; // Simple read for querying user settings
     }
+
+
+    // Add this NEW function for Phase 2 testing (we'll remove it later)
+    function redeemDelegationSimple(Delegation memory _del) external {
+        require(_del.expiration > block.timestamp, "Delegation expired");
+        require(_del.delegator == msg.sender, "Only delegator can redeem");
+        
+        // Skip signature verification for Phase 2 testing
+        // require(signer == _del.delegator, "Invalid signature");
+        
+        // Store the delegation
+        delegations[_del.delegator] = _del;
+        emit DelegationRedeemed(_del.delegator, _del.delegatee, _del.authority);
+    }
 }
