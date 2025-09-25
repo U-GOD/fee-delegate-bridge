@@ -10,7 +10,8 @@ contract AgentTest is Test {
     Agent public agent;
 
     function setUp() public {
-        agent = new Agent(); // Deploy the contract in each test
+        // Deploy agent with dummy oracle addr (zero for now—swap to mock in Step 3.4 for full testing).
+        agent = new Agent(address(0));
     }
 
     function testConstructor_SetsOwnerCorrectly() public view {
