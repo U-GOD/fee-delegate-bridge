@@ -132,16 +132,18 @@ contract Agent {
         // Fetch latest from oracle (ignores roundId/startedAt—focus on answer/updatedAt).
         (, int256 answer, , uint256 updatedAt, ) = gasOracle.latestRoundData();
         
-        // Staleness check: Revert if data >5 min old (gas changes fast; adjust for prod heartbeat ~1hr).
-        require(updatedAt > block.timestamp - 5 minutes, "Stale oracle data");
+        // FIXED: Staleness check - no underflow
+        require(block.timestamp - updatedAt <= 5 minutes, "Stale oracle data");
         
         // Convert oracle answer to gwei—handle 8 decimals for gas feeds (e.g., 25e8 = 25 gwei).
         uint8 dec = gasOracle.decimals();
         currentGasGwei = uint256(answer) / (10 ** dec);
         
-        // Reuse Phase 1 getter; trigger if gas > threshold (0 default = always false, safe).
+        // Direct mapping access (fixes the getGasThreshold error)
         uint256 userThreshold = gasThresholds[_user];
-        shouldTrigger = currentGasGwei > userThreshold;
+        
+        // Only trigger if user has set a threshold AND current gas exceeds it
+        shouldTrigger = (userThreshold > 0) && (currentGasGwei > userThreshold);
     }
 
     // Add this NEW function for Phase 2 testing (we'll remove it later)
