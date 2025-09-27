@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useAccount, useWalletClient } from 'wagmi';
+import { useState, useEffect } from 'react';
+import { useAccount, useWalletClient, useReadContract } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { toHex } from 'viem';
 
@@ -11,9 +11,9 @@ export default function Home() {
   const [threshold, setThreshold] = useState('');
   const [status, setStatus] = useState('');
 
-  const agentAddress = '0x85fbD8781411b607e07D9c28a9459D49DE1dcfA0';
+  const agentAddress = '0xf39344899FcA97AF4b9C60E9a21B657647E2F20E';
 
-  // Updated ABI with the simple function
+  // Extended ABI with checkGas function
   const agentAbi = [
     {
       name: 'setGasThreshold',
@@ -23,7 +23,7 @@ export default function Home() {
       stateMutability: 'nonpayable',
     },
     {
-      name: 'redeemDelegationSimple', // Use the simple version
+      name: 'redeemDelegationSimple',
       type: 'function',
       inputs: [
         {
@@ -48,8 +48,42 @@ export default function Home() {
       ],
       outputs: [],
       stateMutability: 'nonpayable',
+    },
+    // NEW: checkGas function for real-time monitoring
+    {
+      name: 'checkGas',
+      type: 'function',
+      inputs: [{ name: '_user', type: 'address' }],
+      outputs: [
+        { name: 'currentGasGwei', type: 'uint256' },
+        { name: 'shouldTrigger', type: 'bool' }
+      ],
+      stateMutability: 'view',
     }
   ] as const;
+
+  // Wagmi hook to read live gas data
+  const { data: gasData, refetch: refetchGas, error: gasError, isLoading: gasLoading } = useReadContract({
+    address: agentAddress,
+    abi: agentAbi,
+    functionName: 'checkGas',
+    args: [address as `0x${string}`],
+    query: {
+      enabled: !!address,
+      refetchInterval: 30000,
+    },
+  });
+
+  // Auto-refresh gas data when threshold changes
+  useEffect(() => {
+    console.log('Gas Data Debug:', {
+      gasData,
+      gasError,
+      gasLoading,
+      address,
+      agentAddress
+    });
+  }, [gasData, gasError, gasLoading, address]);
 
   const handleSetThreshold = async () => {
     if (!walletClient || !threshold) return setStatus('Enter threshold and connect');
@@ -62,8 +96,10 @@ export default function Home() {
         args: [BigInt(threshold)],
       });
       setStatus(`Threshold set! Tx: ${hash}`);
-    } catch (error: any) {
-      setStatus(`Error: ${error.message}`);
+      // Refresh gas data after setting threshold
+      setTimeout(() => refetchGas(), 2000);
+    } catch (error: unknown) { // Fix: Use unknown instead of any
+      setStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -76,8 +112,8 @@ export default function Home() {
     setStatus('Starting simple delegation...');
 
     try {
-      // Ensure on Monad testnet chain
-      const monadId = 10143n;
+      // Ensure on Monad testnet chain - Fix: Use number instead of bigint
+      const monadId = 10143; // Remove the 'n' to make it a number
       const currentChainId = await walletClient.getChainId();
       
       if (currentChainId !== monadId) {
@@ -91,35 +127,37 @@ export default function Home() {
 
       setStatus('Building delegation payload...');
 
-      // Simple delegation payload - no signature needed
+      // Fix: Properly type the delegation payload
       const delegationPayload = {
-        delegator: address, // Current user's address
-        delegatee: agentAddress, // Your contract address
-        authority: '0x0000000000000000000000000000000000000000000000000000000000000000',
-        caveats: [],
+        delegator: address,
+        delegatee: agentAddress as `0x${string}`, // Cast to correct type
+        authority: '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
+        caveats: [] as readonly { enforcer: `0x${string}`; data: `0x${string}` }[],
         salt: BigInt(Math.floor(Math.random() * 1000000)),
-        expiration: BigInt(Math.floor(Date.now() / 1000) + 86400) // 24 hours
+        expiration: BigInt(Math.floor(Date.now() / 1000) + 86400)
       };
 
       console.log('Delegation payload:', delegationPayload);
 
       setStatus('Redeeming delegation (no signature needed)...');
 
-      // Call the SIMPLE version that doesn't require signature verification
       const txHash = await walletClient.writeContract({
         address: agentAddress,
         abi: agentAbi,
-        functionName: 'redeemDelegationSimple', // Use the simple function
+        functionName: 'redeemDelegationSimple',
         args: [delegationPayload],
       });
 
       setStatus(`Delegation redeemed successfully! Tx: ${txHash}`);
       
-    } catch (error: any) {
+    } catch (error: unknown) { 
       console.error('Delegation error:', error);
-      setStatus(`Error: ${error.message}`);
+      setStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
+
+  // Extract gas data for display
+  const [currentGas, shouldTrigger] = gasData || [0, false];
 
   return (
     <main className="p-8">
@@ -128,25 +166,71 @@ export default function Home() {
       <ConnectButton />
 
       {isConnected && (
-        <div style={{ marginBottom: '20px' }}>
-          <input 
-            type="number" 
-            placeholder="Gas threshold (gwei)" 
-            value={threshold} 
-            onChange={(e) => setThreshold(e.target.value)} 
-            style={{ padding: '5px', marginRight: '10px' }} 
-          />
-          <button onClick={handleSetThreshold} style={{ padding: '10px', marginRight: '10px' }}>
-            Set Threshold
-          </button>
-          <button onClick={handleSignRedeem} style={{ padding: '10px' }}>
-            Sign & Redeem Delegation
-          </button>
+        <div className="space-y-4">
+          {/* Gas Status Display - UPDATED */}
+          <div className="p-4 border rounded-lg bg-gray-50">
+            <h3 className="font-semibold mb-2">Live Gas Monitor</h3>
+            {gasLoading ? (
+              <p>Loading gas data...</p>
+            ) : gasError ? (
+              <p>Error loading gas data: {gasError instanceof Error ? gasError.message : 'Unknown error'}</p>
+            ) : gasData ? (
+              <div className="space-y-2">
+                <p>Current Gas: <strong>{currentGas.toString()} gwei</strong></p>
+                <p>
+                  Trigger Status:{' '}
+                  <span className={`font-bold ${shouldTrigger ? 'text-red-600' : 'text-green-600'}`}>
+                    {shouldTrigger ? 'YES - Bridge Ready!' : 'NO - Below Threshold'}
+                  </span>
+                </p>
+                {threshold && (
+                  <p className="text-sm text-gray-600">
+                    Your threshold: {threshold} gwei |{' '}
+                    {shouldTrigger ? '✅ Ready to bridge!' : '⏳ Waiting for gas spike...'}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p>Connect wallet to see gas data</p>
+            )}
+          </div>
+
+          {/* Threshold Controls */}
+          <div className="flex items-center space-x-2">
+            <input 
+              type="number" 
+              placeholder="Gas threshold (gwei)" 
+              value={threshold} 
+              onChange={(e) => setThreshold(e.target.value)}
+              className="px-3 py-2 border rounded"
+            />
+            <button 
+              onClick={handleSetThreshold}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Set Threshold
+            </button>
+            <button 
+              onClick={handleSignRedeem}
+              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+            >
+              Sign & Redeem Delegation
+            </button>
+            <button 
+              onClick={() => refetchGas()}
+              className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
+            >
+              Refresh ↻
+            </button>
+          </div>
         </div>
       )}
-      <p style={{ marginTop: '10px' }}>{status}</p>
       
-      <p className="mt-4">Connect your wallet to get started!</p>
+      <p className="mt-4 text-gray-600">{status}</p>
+      
+      {!isConnected && (
+        <p className="mt-4">Connect your wallet to see live gas monitoring!</p>
+      )}
     </main>
   );
 }
