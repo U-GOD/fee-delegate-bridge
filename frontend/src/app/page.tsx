@@ -11,7 +11,7 @@ export default function Home() {
   const [threshold, setThreshold] = useState('');
   const [status, setStatus] = useState('');
 
-  const agentAddress = '0xf39344899FcA97AF4b9C60E9a21B657647E2F20E';
+  const agentAddress = '0xe83560430b6b44C1F0B542f911D2b1512f1c1dD3';
 
   // Extended ABI with checkGas function
   const agentAbi = [
@@ -49,7 +49,7 @@ export default function Home() {
       outputs: [],
       stateMutability: 'nonpayable',
     },
-    // NEW: checkGas function for real-time monitoring
+    // checkGas function for real-time monitoring
     {
       name: 'checkGas',
       type: 'function',
@@ -112,8 +112,8 @@ export default function Home() {
     setStatus('Starting simple delegation...');
 
     try {
-      // Ensure on Monad testnet chain - Fix: Use number instead of bigint
-      const monadId = 10143; // Remove the 'n' to make it a number
+      // Ensure on Monad testnet chain
+      const monadId = 10143; 
       const currentChainId = await walletClient.getChainId();
       
       if (currentChainId !== monadId) {
@@ -127,7 +127,7 @@ export default function Home() {
 
       setStatus('Building delegation payload...');
 
-      // Fix: Properly type the delegation payload
+      // Properly type the delegation payload
       const delegationPayload = {
         delegator: address,
         delegatee: agentAddress as `0x${string}`, // Cast to correct type
