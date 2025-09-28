@@ -31,7 +31,7 @@ interface AggregatorV3Interface {
 contract Agent {
     address public owner; // Contract owner for access control in future phases
 
-    // Chainlink gas feed proxy—configurable for chains (e.g., Sepolia ETH proxy for Monad testnet sim).
+    // Chainlink gas feed proxy—configurable for chains (Sepolia ETH proxy for Monad testnet sim).
     AggregatorV3Interface public immutable gasOracle;
 
     // Constructor: Initializes owner and oracle (pass proxy addr on deploy for chain flexibility).
@@ -43,7 +43,7 @@ contract Agent {
     // Mapping for user-specific gas thresholds to enable personalized automation
     mapping(address => uint256) public gasThresholds;
 
-    // Struct for caveat rules (e.g., limits on actions like max amount to bridge)
+    // Struct for caveat rules (limits on actions like max amount to bridge)
     struct Caveat {
         address enforcer; // Contract enforcing the caveat
         bytes data; // Encoded rule data (e.g., ABI-encoded threshold)
@@ -106,7 +106,7 @@ contract Agent {
             v := byte(0, mload(add(_signature, 96))) // v at bytes[64]
         }
         if (v < 27) {
-            v += 27; // Normalize v to 27/28
+            v += 27;
         }
     }
 
@@ -127,17 +127,25 @@ contract Agent {
         return gasThresholds[_user]; // Simple read for querying user settings
     }
 
+    // Mock fallback for testnet (sim gas—use real oracle in prod for live data).
+    function getMockGas() internal view returns (uint256) {
+        return 50;  // Fixed 50 gwei—tweak to sim spikes (e.g., 100 for trigger test).
+    }
+
     // Check current ETH gas vs. user's threshold—core trigger for auto-bridging (returns gwei + bool).
     function checkGas(address _user) external view returns (uint256 currentGasGwei, bool shouldTrigger) {
-        // Fetch latest from oracle (ignores roundId/startedAt—focus on answer/updatedAt).
-        (, int256 answer, , uint256 updatedAt, ) = gasOracle.latestRoundData();
+        // // Fetch latest from oracle (ignores roundId/startedAt—focus on answer/updatedAt).
+        // (, int256 answer, , uint256 updatedAt, ) = gasOracle.latestRoundData();
         
-        // FIXED: Staleness check - no underflow
-        require(block.timestamp - updatedAt <= 5 minutes, "Stale oracle data");
+        // // Staleness check 
+        // require(block.timestamp - updatedAt <= 5 minutes, "Stale oracle data");
         
-        // Convert oracle answer to gwei—handle 8 decimals for gas feeds (e.g., 25e8 = 25 gwei).
-        uint8 dec = gasOracle.decimals();
-        currentGasGwei = uint256(answer) / (10 ** dec);
+        // // Convert oracle answer to gwei—handle 8 decimals for gas feeds (e.g., 25e8 = 25 gwei).
+        // uint8 dec = gasOracle.decimals();
+        // currentGasGwei = uint256(answer) / (10 ** dec);
+
+        // In checkGas, replace fetch block with:
+        currentGasGwei = getMockGas();  // Temp mock for debug—no staleness or convert needed.
         
         // Direct mapping access (fixes the getGasThreshold error)
         uint256 userThreshold = gasThresholds[_user];
