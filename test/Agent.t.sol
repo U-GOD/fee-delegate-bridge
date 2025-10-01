@@ -165,7 +165,7 @@ contract AgentTest is Test {
         agent.redeemDelegation(del, sig);
     }
 
-    function testCheckGasAndBridge_RevertsIfNoTrigger() public {
+    function testCheckGasAndBridge_RevertsNoTrigger() public {
         address user = address(0x123);
         vm.prank(user);
         agent.setGasThreshold(70); // Set 70 gwei threshold
