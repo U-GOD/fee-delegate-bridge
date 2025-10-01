@@ -48,7 +48,7 @@ contract AgentOracleTest is Test {
     
     function setUp() public {
         mockOracle = new MockOracle();
-        agent = new Agent(address(mockOracle));
+        agent = new Agent(address(mockOracle), address(0)); // Mock oracle, dummy endpoint.
     }
     
     // Let's start with the simplest test first
