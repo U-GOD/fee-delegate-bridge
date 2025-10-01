@@ -28,16 +28,35 @@ interface AggregatorV3Interface {
     );
 }
 
+// Interface for LayerZero Endpoint V2 (core for cross-chain sends—enables lzSend like any address).
+interface IEndpointV2 {
+    // Send message to dest chain (payable for fees; _options for gas/refund).
+    function lzSend(uint32 _dstEid, bytes calldata _message, bytes calldata _options) external payable;
+
+    // Quote fees for send (view—call before lzSend to check msg.value).
+    function quote(uint32 _dstEid, bytes calldata _message, bool _payInZRO, bytes calldata _adapterParams) external view returns (uint256 nativeFee, uint256 zroFee);
+
+    // Receive message (for dest side—emit for verifiers).
+    function receiveMessage(bytes32 _guid, uint32 _srcEid, address _srcAddress, bytes calldata _message) external;
+
+    // Other utils (e.g., getEid for chain ID).
+    function getEid() external view returns (uint32);
+}
+
 contract Agent {
     address public owner; // Contract owner for access control in future phases
 
     // Chainlink gas feed proxy—configurable for chains (Sepolia ETH proxy for Monad testnet sim).
     AggregatorV3Interface public immutable gasOracle;
 
-    // Constructor: Initializes owner and oracle (pass proxy addr on deploy for chain flexibility).
-    constructor(address _gasOracle) {
+    // LayerZero endpoint for cross-chain sends—configurable (e.g., Monad testnet for bridging).
+    IEndpointV2 public immutable endpoint;
+
+    // Constructor: Initializes owner, oracle, and LayerZero endpoint (pass addrs on deploy for flexibility).
+    constructor(address _gasOracle, address _endpoint) {
         owner = msg.sender;
         gasOracle = AggregatorV3Interface(_gasOracle);
+        endpoint = IEndpointV2(_endpoint);
     }
 
     // Mapping for user-specific gas thresholds to enable personalized automation
