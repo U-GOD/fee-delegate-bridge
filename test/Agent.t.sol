@@ -164,4 +164,15 @@ contract AgentTest is Test {
         vm.expectRevert("Delegation expired");
         agent.redeemDelegation(del, sig);
     }
+
+    function testCheckGasAndBridge_RevertsIfNoTrigger() public {
+        address user = address(0x123);
+        vm.prank(user);
+        agent.setGasThreshold(70); // Set 70 gwei threshold
+
+        // Sim low gas (mock 50 <  70 → no trigger)
+        // Assume mock in checkGas returns 50, call expects revert.
+        vm.expectRevert("No trigger-gas below threshold");
+        agent.checkGasAndBridge{value: 0}(user); // Call with zero value (payable ok). 
+    }
 }
