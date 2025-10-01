@@ -10,7 +10,7 @@ contract AgentTest is Test {
     Agent public agent;
 
     function setUp() public {
-        agent = new Agent(address(0));
+        agent = new Agent(address(0), address(0)); // Dummy oracle/endpoint for non-bridging tests.
     }
 
     function testConstructor_SetsOwnerCorrectly() public view {
