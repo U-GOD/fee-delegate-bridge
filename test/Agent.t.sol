@@ -172,7 +172,7 @@ contract AgentTest is Test {
 
         // Sim low gas (mock 50 <  70 → no trigger)
         // Assume mock in checkGas returns 50, call expects revert.
-        vm.expectRevert("No trigger-gas below threshold");
+        vm.expectRevert("No trigger: gas below threshold");
         agent.checkGasAndBridge{value: 0}(user); // Call with zero value (payable ok). 
     }
 }
