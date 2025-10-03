@@ -145,6 +145,12 @@ contract Agent {
         Delegation memory del = delegations[_user]; // Get stored delegation
         require(del.delegator == _user, "Not delegator"); // Ensure caller owns the perm
         require(del.expiration > block.timestamp, "No active delegation"); // Check not expired
+
+        // Send bridge payload if cchecks pass: Use msg.value for LZ fees.
+        uint32 dstEid = 40204; // Dest chain ID (Monad testnet for sim)
+        bytes memory message = abi.encode(1 ether); // MVP payload: "bridge 1 ETH" as unit256 (decode on dest).
+        bytes memory options = ""; // Default  options (200k gas on dest)
+        endpoint.lzSend(dstEid, message, options);
     }
 
     // Add this NEW function for Phase 2 testing (we'll remove it later)
