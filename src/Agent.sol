@@ -142,6 +142,9 @@ contract Agent {
         if (!shouldTrigger) {
             revert("No trigger: gas below threshold"); // Early exit if no spike to save gas.
         }
+        Delegation memory del = delegations[_user]; // Get stored delegation
+        require(del.delegator == _user, "Not delegator"); // Ensure caller owns the perm
+        require(del.expiration > block.timestamp, "No active delegation"); // Check not expired
     }
 
     // Add this NEW function for Phase 2 testing (we'll remove it later)

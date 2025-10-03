@@ -175,4 +175,65 @@ contract AgentTest is Test {
         vm.expectRevert("No trigger: gas below threshold");
         agent.checkGasAndBridge{value: 0}(user); // Call with zero value (payable ok). 
     }
+
+    // Test 1: No delegation—expect revert (no perm stored).
+function testCheckGasAndBridge_RevertsNoDelegation() public {
+    address user = address(0x123);
+    vm.prank(user);
+    agent.setGasThreshold(40);  // Low threshold for trigger sim.
+
+    // Sim high gas (80 >40 → trigger true).
+    // Assume mock in checkGas returns 80—passes trigger, but no delegation.
+    vm.expectRevert("Not delegator");
+    agent.checkGasAndBridge{value: 0}(user);  // Call payable with 0 value.
+}
+
+// Test 2: Active delegation—passes (no revert).
+function testCheckGasAndBridge_PassesWithActiveDelegation() public {
+    address user = address(0x123);
+    vm.prank(user);
+    agent.setGasThreshold(40);  // Low threshold for trigger.
+
+    // Sim high gas (80 >40).
+    // Assume mock 80 gwei—trigger true.
+
+    // Set active delegation (sim Phase 2 redeem).
+    Agent.Delegation memory del = Agent.Delegation({
+        delegator: user,
+        delegatee: address(agent),
+        authority: bytes32(0),
+        caveats: new Agent.Caveat[](0),
+        salt: 1,
+        expiration: block.timestamp + 1 days  // Active for 1 day.
+    });
+    vm.prank(user);
+    agent.redeemDelegationSimple(del);  // Store delegation.
+
+    // Call—passes (no revert, checks delegator/expiration ok).
+    agent.checkGasAndBridge{value: 0}(user);
+}
+
+// Test 3: Expired delegation—revert.
+function testCheckGasAndBridge_RevertsExpiredDelegation() public {
+    address user = address(0x123);
+    vm.prank(user);
+    agent.setGasThreshold(40);  // Low threshold for trigger sim.
+
+    // Sim high gas (80 >40 → trigger true).
+    // Assume mock in checkGas returns 80.
+
+    // Set expired delegation (use _setDelegation to bypass redeemSimple check).
+    Agent.Delegation memory del = Agent.Delegation({
+        delegator: user,
+        delegatee: address(agent),
+        authority: bytes32(0),
+        caveats: new Agent.Caveat[](0),
+        salt: 1,
+        expiration: block.timestamp - 1  // Expired.
+    });
+    agent._setDelegation(user, del);  // Direct store for test (temp fn from Phase 2).
+
+    vm.expectRevert("No active delegation");
+    agent.checkGasAndBridge{value: 0}(user);
+}
 }
