@@ -138,7 +138,7 @@ contract Agent {
 
     // Auto-bridge if gas trigger, payable for LZ fees (combines check +  send under delegation)
     function checkGasAndBridge(address _user) external payable { 
-        (uint256 currentGasGwei, bool shouldTrigger) = this.checkGas(_user);
+        ( /* uint256 currentGasGwei*/, bool shouldTrigger) = this.checkGas(_user);
         if (!shouldTrigger) {
             revert("No trigger: gas below threshold"); // Early exit if no spike to save gas.
         }
