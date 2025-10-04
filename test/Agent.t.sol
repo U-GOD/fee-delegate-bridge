@@ -242,30 +242,59 @@ contract AgentTest is Test {
     }
 
     // Test lzSend call—expects endpoint called with correct dstEid/payload/options when checks pass.
-function testCheckGasAndBridge_CallsLzSendOnTrigger() public {
-    address user = address(0x123);
-    
-    // Setup: Set threshold and delegation
-    vm.prank(user);
-    agent.setGasThreshold(40);
+    function testCheckGasAndBridge_CallsLzSendOnTrigger() public {
+        address user = address(0x123);
+        
+        // Setup: Set threshold and delegation
+        vm.prank(user);
+        agent.setGasThreshold(40);
 
-    Agent.Delegation memory del = Agent.Delegation({
-        delegator: user,
-        delegatee: address(agent),
-        authority: bytes32(0),
-        caveats: new Agent.Caveat[](0),
-        salt: 1,
-        expiration: block.timestamp + 1 days
-    });
-    
-    vm.prank(user);
-    agent.redeemDelegationSimple(del);
+        Agent.Delegation memory del = Agent.Delegation({
+            delegator: user,
+            delegatee: address(agent),
+            authority: bytes32(0),
+            caveats: new Agent.Caveat[](0),
+            salt: 1,
+            expiration: block.timestamp + 1 days
+        });
+        
+        vm.prank(user);
+        agent.redeemDelegationSimple(del);
 
-    // Expect the event - using simplified signature
-    vm.expectEmit(true, true, true, true);
-    emit MockEndpoint.MockLzSend(40204, abi.encode(1 ether), "");
+        // Expect the event - using simplified signature
+        vm.expectEmit(true, true, true, true);
+        emit MockEndpoint.MockLzSend(40204, abi.encode(1 ether), "");
 
-    // Execute the function
-    agent.checkGasAndBridge{value: 0.01 ether}(user);
-}
+        // Execute the function
+        agent.checkGasAndBridge{value: 0.01 ether}(user);
+    }
+
+    // Test fee quote and require—revert if msg.value < nativeFee, pass if enough.
+    function testCheckGasAndBridge_RevertsInsufficientFee() public {
+        address user = address(0x123);
+        vm.prank(user);
+        agent.setGasThreshold(40);  // Low threshold for trigger.
+
+        // Sim high gas (80 >40 → trigger true).
+        // Assume mock 80 gwei.
+
+        // Set active delegation.
+        Agent.Delegation memory del = Agent.Delegation({
+            delegator: user,
+            delegatee: address(agent),
+            authority: bytes32(0),
+            caveats: new Agent.Caveat[](0),
+            salt: 1,
+            expiration: block.timestamp + 1 days
+        });
+        vm.prank(user);
+        agent.redeemDelegationSimple(del);
+
+        // Case 1: Low value < nativeFee (0.01 ether from mock)—expect revert.
+        vm.expectRevert("Insufficient fee");
+        agent.checkGasAndBridge{value: 0.005 ether}(user);  // Half fee—reverts at require.
+
+        // Case 2: Enough value >= nativeFee—passes (no revert, calls lzSend).
+        agent.checkGasAndBridge{value: 0.01 ether}(user);  // Matches mock quote—succeeds.
+    }
 }
