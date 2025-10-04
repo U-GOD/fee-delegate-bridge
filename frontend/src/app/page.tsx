@@ -239,6 +239,20 @@ export default function Home() {
               Refresh ↻
             </button>
           </div>
+
+          <button 
+            onClick={() => writeContract({
+              address: agentAddress,
+              abi: agentAbi,
+              functionName: 'checkGasAndBridge',
+              args: [address as `0x${string}`],
+              value: BigInt(10 ** 16),
+            })}  // Call bridge tx if clicked: uses hook for LZ fees.
+            disabled={!shouldTrigger || isPending}  // Disable if no trigger or loading.
+            className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:bg-gray-300"
+          >
+            {isPending ? 'Bridging...' : 'Bridge Now (0.01 MON fee)'}
+          </button>
         </div>
       )}
       
