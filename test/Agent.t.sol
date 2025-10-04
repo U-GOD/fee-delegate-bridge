@@ -214,7 +214,7 @@ contract AgentTest is Test {
         agent.redeemDelegationSimple(del);  // Store delegation.
 
         // Call—passes (no revert, checks delegator/expiration ok).
-        agent.checkGasAndBridge{value: 0}(user);
+        agent.checkGasAndBridge{value: 0.01 ether}(user);
     }
 
     // Test 3: Expired delegation—revert.
