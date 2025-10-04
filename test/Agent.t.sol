@@ -5,12 +5,16 @@ pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 import {Agent} from "../src/Agent.sol";
+import {MockEndpoint} from "./MockEndpoint.sol";
 
 contract AgentTest is Test {
     Agent public agent;
 
+    MockEndpoint public mockEndpoint;
+
     function setUp() public {
-        agent = new Agent(address(0), address(0)); // Dummy oracle/endpoint for non-bridging tests.
+        mockEndpoint = new MockEndpoint();  // Deploy mock endpoint.
+        agent = new Agent(address(0), address(mockEndpoint)); // Dummy oracle/endpoint for non-bridging tests.
     }
 
     function testConstructor_SetsOwnerCorrectly() public view {
@@ -177,63 +181,91 @@ contract AgentTest is Test {
     }
 
     // Test 1: No delegation—expect revert (no perm stored).
-function testCheckGasAndBridge_RevertsNoDelegation() public {
+    function testCheckGasAndBridge_RevertsNoDelegation() public {
+        address user = address(0x123);
+        vm.prank(user);
+        agent.setGasThreshold(40);  // Low threshold for trigger sim.
+
+        // Sim high gas (80 >40 → trigger true).
+        // Assume mock in checkGas returns 80—passes trigger, but no delegation.
+        vm.expectRevert("Not delegator");
+        agent.checkGasAndBridge{value: 0}(user);  // Call payable with 0 value.
+    }
+
+    // Test 2: Active delegation—passes (no revert).
+    function testCheckGasAndBridge_PassesWithActiveDelegation() public {
+        address user = address(0x123);
+        vm.prank(user);
+        agent.setGasThreshold(40);  // Low threshold for trigger.
+
+        // Sim high gas (80 >40).
+        // Assume mock 80 gwei—trigger true.
+
+        // Set active delegation (sim Phase 2 redeem).
+        Agent.Delegation memory del = Agent.Delegation({
+            delegator: user,
+            delegatee: address(agent),
+            authority: bytes32(0),
+            caveats: new Agent.Caveat[](0),
+            salt: 1,
+            expiration: block.timestamp + 1 days  // Active for 1 day.
+        });
+        vm.prank(user);
+        agent.redeemDelegationSimple(del);  // Store delegation.
+
+        // Call—passes (no revert, checks delegator/expiration ok).
+        agent.checkGasAndBridge{value: 0}(user);
+    }
+
+    // Test 3: Expired delegation—revert.
+    function testCheckGasAndBridge_RevertsExpiredDelegation() public {
+        address user = address(0x123);
+        vm.prank(user);
+        agent.setGasThreshold(40);  // Low threshold for trigger sim.
+
+        // Sim high gas (80 >40 → trigger true).
+        // Assume mock in checkGas returns 80.
+
+        // Set expired delegation (use _setDelegation to bypass redeemSimple check).
+        Agent.Delegation memory del = Agent.Delegation({
+            delegator: user,
+            delegatee: address(agent),
+            authority: bytes32(0),
+            caveats: new Agent.Caveat[](0),
+            salt: 1,
+            expiration: block.timestamp - 1  // Expired.
+        });
+        agent._setDelegation(user, del);  // Direct store for test (temp fn from Phase 2).
+
+        vm.expectRevert("No active delegation");
+        agent.checkGasAndBridge{value: 0}(user);
+    }
+
+    // Test lzSend call—expects endpoint called with correct dstEid/payload/options when checks pass.
+function testCheckGasAndBridge_CallsLzSendOnTrigger() public {
     address user = address(0x123);
+    
+    // Setup: Set threshold and delegation
     vm.prank(user);
-    agent.setGasThreshold(40);  // Low threshold for trigger sim.
+    agent.setGasThreshold(40);
 
-    // Sim high gas (80 >40 → trigger true).
-    // Assume mock in checkGas returns 80—passes trigger, but no delegation.
-    vm.expectRevert("Not delegator");
-    agent.checkGasAndBridge{value: 0}(user);  // Call payable with 0 value.
-}
-
-// Test 2: Active delegation—passes (no revert).
-function testCheckGasAndBridge_PassesWithActiveDelegation() public {
-    address user = address(0x123);
-    vm.prank(user);
-    agent.setGasThreshold(40);  // Low threshold for trigger.
-
-    // Sim high gas (80 >40).
-    // Assume mock 80 gwei—trigger true.
-
-    // Set active delegation (sim Phase 2 redeem).
     Agent.Delegation memory del = Agent.Delegation({
         delegator: user,
         delegatee: address(agent),
         authority: bytes32(0),
         caveats: new Agent.Caveat[](0),
         salt: 1,
-        expiration: block.timestamp + 1 days  // Active for 1 day.
+        expiration: block.timestamp + 1 days
     });
+    
     vm.prank(user);
-    agent.redeemDelegationSimple(del);  // Store delegation.
+    agent.redeemDelegationSimple(del);
 
-    // Call—passes (no revert, checks delegator/expiration ok).
-    agent.checkGasAndBridge{value: 0}(user);
-}
+    // Expect the event - using simplified signature
+    vm.expectEmit(true, true, true, true);
+    emit MockEndpoint.MockLzSend(40204, abi.encode(1 ether), "");
 
-// Test 3: Expired delegation—revert.
-function testCheckGasAndBridge_RevertsExpiredDelegation() public {
-    address user = address(0x123);
-    vm.prank(user);
-    agent.setGasThreshold(40);  // Low threshold for trigger sim.
-
-    // Sim high gas (80 >40 → trigger true).
-    // Assume mock in checkGas returns 80.
-
-    // Set expired delegation (use _setDelegation to bypass redeemSimple check).
-    Agent.Delegation memory del = Agent.Delegation({
-        delegator: user,
-        delegatee: address(agent),
-        authority: bytes32(0),
-        caveats: new Agent.Caveat[](0),
-        salt: 1,
-        expiration: block.timestamp - 1  // Expired.
-    });
-    agent._setDelegation(user, del);  // Direct store for test (temp fn from Phase 2).
-
-    vm.expectRevert("No active delegation");
-    agent.checkGasAndBridge{value: 0}(user);
+    // Execute the function
+    agent.checkGasAndBridge{value: 0.01 ether}(user);
 }
 }
