@@ -11,7 +11,7 @@ export default function Home() {
   const [threshold, setThreshold] = useState('');
   const [status, setStatus] = useState('');
 
-  const agentAddress = '0xe83560430b6b44C1F0B542f911D2b1512f1c1dD3';
+  const agentAddress = '0x646EeB4af654c5dDBF245142Eedc196728FbfB70';
 
   // Extended ABI with checkGas function
   const agentAbi = [
