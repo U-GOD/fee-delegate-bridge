@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAccount, useWalletClient, useReadContract } from 'wagmi';
+import { useAccount, useWalletClient, useReadContract, useWriteContract } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { toHex } from 'viem';
 
@@ -59,6 +59,13 @@ export default function Home() {
         { name: 'shouldTrigger', type: 'bool' }
       ],
       stateMutability: 'view',
+    },
+    {
+      name: 'checkGasAndBridge',
+      type: 'function',
+      inputs: [{name: '_user', type: 'address' }],
+      outputs: [],
+      stateMutability: 'payable', // Payable for LZ fees (msg.value).
     }
   ] as const;
 
@@ -73,6 +80,15 @@ export default function Home() {
       refetchInterval: 30000,
     },
   });
+
+  // Hook for bridge tx: value for LZ fees (call if shouldTrigger).
+  const { writeContract, isPending, error: writeError} = useWriteContract ({
+    address: agentAddress,
+    abi: agentAbi,
+    functionName: 'checkGasAndBridge',
+    args: [address as `0x${string}`],
+    value: BigInt(10 ** 16), // 0.01 MON in wei (0.01 * 10^18 = 10^16)
+  } as const);
 
   // Auto-refresh gas data when threshold changes
   useEffect(() => {
