@@ -160,6 +160,12 @@ contract Agent {
 
         // Send bridge payload if cchecks pass: Use msg.value for LZ fees.
         ENDPOINT.lzSend(dstEid, message, options);
+
+        // Refund extra value if overpaid (simple send back to caller)
+        uint256 extra = msg.value - nativeFee;
+        if (extra > 0) {
+            payable(msg.sender).transfer(extra);
+        }
     }
 
     // Add this NEW function for Phase 2 testing (we'll remove it later)
