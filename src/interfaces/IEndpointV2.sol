@@ -8,7 +8,7 @@ interface IEndpointV2 {
     function lzSend(uint32 _dstEid, bytes calldata _message, bytes calldata _options) external payable;
 
     // Quote fees for send (view—call before lzSend to check msg.value).
-    function quote(uint32 _dstEid, bytes calldata _message, bool _payInZRO, bytes calldata _adapterParams) external view returns (uint256 nativeFee, uint256 zroFee);
+    function quote(uint32 _dstEid, bytes calldata _message, bool _payInZrO, bytes calldata _adapterParams) external view returns (uint256 nativeFee, uint256 zroFee);
 
     // Receive message (for dest side—emit for verifiers).
     function receiveMessage(bytes32 _guid, uint32 _srcEid, address _srcAddress, bytes calldata _message) external;

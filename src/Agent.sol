@@ -10,16 +10,16 @@ contract Agent {
     address public owner; // Contract owner for access control in future phases
 
     // Chainlink gas feed proxy—configurable for chains (Sepolia ETH proxy for Monad testnet sim).
-    AggregatorV3Interface public immutable gasOracle;
+    AggregatorV3Interface public immutable GAS_ORACLE;
 
     // LayerZero endpoint for cross-chain sends—configurable (e.g., Monad testnet for bridging).
-    IEndpointV2 public immutable endpoint;
+    IEndpointV2 public immutable ENDPOINT;
 
     // Constructor: Initializes owner, oracle, and LayerZero endpoint (pass addrs on deploy for flexibility).
     constructor(address _gasOracle, address _endpoint) {
         owner = msg.sender;
-        gasOracle = AggregatorV3Interface(_gasOracle);
-        endpoint = IEndpointV2(_endpoint);
+        GAS_ORACLE = AggregatorV3Interface(_gasOracle);
+        ENDPOINT = IEndpointV2(_endpoint);
     }
 
     // Mapping for user-specific gas thresholds to enable personalized automation
@@ -59,6 +59,10 @@ contract Agent {
 
         // Hash the delegation payload for signature verification
         bytes32 payloadHash = keccak256(abi.encode(_del));
+        // bytes32 payloadHash;
+        // assembly {
+        //     payloadHash := keccak256(add(_del, 0x20), mload(_del))
+        // }
         bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", payloadHash));
 
         // Recover signer and ensure it matches delegator
@@ -110,7 +114,7 @@ contract Agent {
     }
 
     // Mock fallback for testnet (sim gas—use real oracle in prod for live data).
-    function getMockGas() internal view returns (uint256) {
+    function getMockGas() internal pure returns (uint256) {
         return 50;  // Fixed 50 gwei—tweak to sim spikes (e.g., 100 for trigger test).
     }
 
@@ -146,11 +150,16 @@ contract Agent {
         require(del.delegator == _user, "Not delegator"); // Ensure caller owns the perm
         require(del.expiration > block.timestamp, "No active delegation"); // Check not expired
 
-        // Send bridge payload if cchecks pass: Use msg.value for LZ fees.
         uint32 dstEid = 40204; // Dest chain ID (Monad testnet for sim)
         bytes memory message = abi.encode(1 ether); // MVP payload: "bridge 1 ETH" as unit256 (decode on dest).
         bytes memory options = ""; // Default  options (200k gas on dest)
-        endpoint.lzSend(dstEid, message, options);
+
+        // Quote fees before send (could be used to validate msg.value if desired). Ignore zroFee for native pay (false).
+        (uint256 nativeFee, ) = ENDPOINT.quote(dstEid, message, false, options); // Inputs from lzSend vars, default params.
+        require(msg.value >= nativeFee, "Insufficient fee"); // Prevent underpay revert
+
+        // Send bridge payload if cchecks pass: Use msg.value for LZ fees.
+        ENDPOINT.lzSend(dstEid, message, options);
     }
 
     // Add this NEW function for Phase 2 testing (we'll remove it later)
