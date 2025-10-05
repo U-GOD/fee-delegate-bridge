@@ -44,6 +44,10 @@ contract Agent {
     // Mapping to store active delegations per delegator (internal for encapsulation)
     mapping(address => Delegation) internal delegations;
 
+    // Event for tracking bridge attempts
+    event BridgeInitiated(address indexed user, uint32 dstEid, uint256 amount, uint256 fee);
+    event BridgeFailed(address indexed user, string reason);
+
     // Public getter to return full delegation struct for queries
     function getDelegation(address _delegator) external view returns (Delegation memory) {
         return delegations[_delegator];
@@ -142,26 +146,48 @@ contract Agent {
 
     // Auto-bridge if gas trigger, payable for LZ fees (combines check +  send under delegation)
     function checkGasAndBridge(address _user) external payable { 
-        ( /* uint256 currentGasGwei*/, bool shouldTrigger) = this.checkGas(_user);
+        (, bool shouldTrigger) = this.checkGas(_user);
         if (!shouldTrigger) {
-            revert("No trigger: gas below threshold"); // Early exit if no spike to save gas.
+            revert("No trigger: gas below threshold");
         }
-        Delegation memory del = delegations[_user]; // Get stored delegation
-        require(del.delegator == _user, "Not delegator"); // Ensure caller owns the perm
-        require(del.expiration > block.timestamp, "No active delegation"); // Check not expired
+        
+        Delegation memory del = delegations[_user];
+        require(del.delegator == _user, "Not delegator");
+        require(del.expiration > block.timestamp, "No active delegation");
 
-        uint32 dstEid = 40204; // Dest chain ID (Monad testnet for sim)
-        bytes memory message = abi.encode(1 ether); // MVP payload: "bridge 1 ETH" as unit256 (decode on dest).
-        bytes memory options = ""; // Default  options (200k gas on dest)
+        uint32 dstEid = 40204; // Monad testnet destination ID
+        
+        // Enhanced payload structure
+        bytes memory message = abi.encode(
+            _user,                    // sender address
+            1 ether,                  // amount  
+            block.timestamp,          // timestamp
+            "BRIDGE_TO_MONAD"         // action type
+        );
+        
+        bytes memory options = ""; // Default options
 
-        // Quote fees before send (could be used to validate msg.value if desired). Ignore zroFee for native pay (false).
-        (uint256 nativeFee, ) = ENDPOINT.quote(dstEid, message, false, options); // Inputs from lzSend vars, default params.
-        require(msg.value >= nativeFee, "Insufficient fee"); // Prevent underpay revert
+        // Get fee quote from LayerZero
+        (uint256 nativeFee, ) = ENDPOINT.quote(
+            dstEid,
+            message,
+            false,  // payInZRO = false (use native token)
+            options
+        );
+        
+        // FIXED: Simple error message
+        require(msg.value >= nativeFee, "Insufficient fee");
 
-        // Send bridge payload if cchecks pass: Use msg.value for LZ fees.
-        ENDPOINT.lzSend(dstEid, message, options);
-
-        // Refund extra value if overpaid (simple send back to caller)
+        // Call LayerZero
+        ENDPOINT.lzSend{value: nativeFee}(
+            dstEid,
+            message,
+            options
+        );
+        
+        emit BridgeInitiated(_user, dstEid, 1 ether, nativeFee);
+        
+        // Refund any extra value
         uint256 extra = msg.value - nativeFee;
         if (extra > 0) {
             payable(msg.sender).transfer(extra);
