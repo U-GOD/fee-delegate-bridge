@@ -11,7 +11,7 @@ export default function Home() {
   const [threshold, setThreshold] = useState('');
   const [status, setStatus] = useState('');
 
-  const agentAddress = '0x646EeB4af654c5dDBF245142Eedc196728FbfB70';
+  const agentAddress = '0xA2EA4B31f0E36f18DBd5C21De4f82083d6d64E2d';
 
   // Extended ABI with checkGas function
   const agentAbi = [
@@ -101,6 +101,10 @@ export default function Home() {
     });
   }, [gasData, gasError, gasLoading, address]);
 
+  const estimateLayerZeroFee = async (): Promise<bigint> => {
+    return BigInt(10 ** 16); // 0.01 MON in wei
+  };
+
   const handleSetThreshold = async () => {
     if (!walletClient || !threshold) return setStatus('Enter threshold and connect');
     setStatus('Setting threshold...');
@@ -116,6 +120,29 @@ export default function Home() {
       setTimeout(() => refetchGas(), 2000);
     } catch (error: unknown) { // Fix: Use unknown instead of any
       setStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleBridgeWithFee = async () => {
+    if (!address || !shouldTrigger) return;
+    
+    try {
+      setStatus('Estimating bridge fee...');
+      const estimatedFee = await estimateLayerZeroFee();
+      
+      setStatus('Bridging...');
+      
+      // Use the writeContract hook with proper value
+      writeContract({
+        address: agentAddress,
+        abi: agentAbi,
+        functionName: 'checkGasAndBridge',
+        args: [address],
+        value: estimatedFee,
+      });
+      
+    } catch (error) {
+      setStatus(`Bridge error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -143,7 +170,6 @@ export default function Home() {
 
       setStatus('Building delegation payload...');
 
-      // Properly type the delegation payload
       const delegationPayload = {
         delegator: address,
         delegatee: agentAddress as `0x${string}`, // Cast to correct type
@@ -241,14 +267,8 @@ export default function Home() {
           </div>
 
           <button 
-            onClick={() => writeContract({
-              address: agentAddress,
-              abi: agentAbi,
-              functionName: 'checkGasAndBridge',
-              args: [address as `0x${string}`],
-              value: BigInt(10 ** 16),
-            })}  // Call bridge tx if clicked: uses hook for LZ fees.
-            disabled={!shouldTrigger || isPending}  // Disable if no trigger or loading.
+            onClick={handleBridgeWithFee}
+            disabled={!shouldTrigger || isPending}
             className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:bg-gray-300"
           >
             {isPending ? 'Bridging...' : 'Bridge Now (0.01 MON fee)'}

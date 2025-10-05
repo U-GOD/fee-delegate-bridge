@@ -261,9 +261,12 @@ contract AgentTest is Test {
         vm.prank(user);
         agent.redeemDelegationSimple(del);
 
-        // Expect the event - using simplified signature
+        // Expect BOTH events now
         vm.expectEmit(true, true, true, true);
-        emit MockEndpoint.MockLzSend(40204, abi.encode(1 ether), "");
+        emit MockEndpoint.MockLzSend(40204, abi.encode(user, 1 ether, block.timestamp, "BRIDGE_TO_MONAD"), "");
+
+        vm.expectEmit(true, true, false, true);
+        emit Agent.BridgeInitiated(user, 40204, 1 ether, 0.01 ether);
 
         // Execute the function
         agent.checkGasAndBridge{value: 0.01 ether}(user);
