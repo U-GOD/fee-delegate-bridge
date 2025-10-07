@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAccount, useWalletClient, useReadContract, useWriteContract } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { toHex } from 'viem';
+import Header from '@/components/Header';
 
 export default function Home() {
   const { address, isConnected } = useAccount();
@@ -202,85 +203,95 @@ export default function Home() {
   const [currentGas, shouldTrigger] = gasData || [0, false];
 
   return (
-    <main className="p-8">
-      <h1 className="text-2xl font-bold mb-4">FeeDelegate Bridge</h1>
-      
-      <ConnectButton />
+    <>
+      {/* Header section (new file) */}
+      <Header />
 
-      {isConnected && (
-        <div className="space-y-4">
-          {/* Gas Status Display - UPDATED */}
-          <div className="p-4 border rounded-lg bg-gray-50">
-            <h3 className="font-semibold mb-2">Live Gas Monitor</h3>
-            {gasLoading ? (
-              <p>Loading gas data...</p>
-            ) : gasError ? (
-              <p>Error loading gas data: {gasError instanceof Error ? gasError.message : 'Unknown error'}</p>
-            ) : gasData ? (
-              <div className="space-y-2">
-                <p>Current Gas: <strong>{currentGas.toString()} gwei</strong></p>
+      {/* Main content section (your existing code) */}
+      <main className="p-8">
+        <h1 className="text-2xl font-bold mb-4">FeeDelegate Bridge</h1>
+        
+        <ConnectButton />
+
+        {isConnected && (
+          <div className="space-y-4">
+            {/* Gas Status Display - UPDATED */}
+            <div className="p-4 border rounded-lg bg-gray-50">
+              <h3 className="font-semibold mb-2">Live Gas Monitor</h3>
+              {gasLoading ? (
+                <p>Loading gas data...</p>
+              ) : gasError ? (
                 <p>
-                  Trigger Status:{' '}
-                  <span className={`font-bold ${shouldTrigger ? 'text-red-600' : 'text-green-600'}`}>
-                    {shouldTrigger ? 'YES - Bridge Ready!' : 'NO - Below Threshold'}
-                  </span>
+                  Error loading gas data: {gasError instanceof Error ? gasError.message : 'Unknown error'}
                 </p>
-                {threshold && (
-                  <p className="text-sm text-gray-600">
-                    Your threshold: {threshold} gwei |{' '}
-                    {shouldTrigger ? '✅ Ready to bridge!' : '⏳ Waiting for gas spike...'}
+              ) : gasData ? (
+                <div className="space-y-2">
+                  <p>
+                    Current Gas: <strong>{currentGas.toString()} gwei</strong>
                   </p>
-                )}
-              </div>
-            ) : (
-              <p>Connect wallet to see gas data</p>
-            )}
-          </div>
+                  <p>
+                    Trigger Status:{' '}
+                    <span
+                      className={`font-bold ${shouldTrigger ? 'text-red-600' : 'text-green-600'}`}
+                    >
+                      {shouldTrigger ? 'YES - Bridge Ready!' : 'NO - Below Threshold'}
+                    </span>
+                  </p>
+                  {threshold && (
+                    <p className="text-sm text-gray-600">
+                      Your threshold: {threshold} gwei |{' '}
+                      {shouldTrigger ? '✅ Ready to bridge!' : '⏳ Waiting for gas spike...'}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p>Connect wallet to see gas data</p>
+              )}
+            </div>
 
-          {/* Threshold Controls */}
-          <div className="flex items-center space-x-2">
-            <input 
-              type="number" 
-              placeholder="Gas threshold (gwei)" 
-              value={threshold} 
-              onChange={(e) => setThreshold(e.target.value)}
-              className="px-3 py-2 border rounded"
-            />
-            <button 
-              onClick={handleSetThreshold}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            {/* Threshold Controls */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="number"
+                placeholder="Gas threshold (gwei)"
+                value={threshold}
+                onChange={(e) => setThreshold(e.target.value)}
+                className="px-3 py-2 border rounded"
+              />
+              <button
+                onClick={handleSetThreshold}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Set Threshold
+              </button>
+              <button
+                onClick={handleSignRedeem}
+                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+              >
+                Sign & Redeem Delegation
+              </button>
+              <button
+                onClick={() => refetchGas()}
+                className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
+              >
+                Refresh ↻
+              </button>
+            </div>
+
+            <button
+              onClick={handleBridgeWithFee}
+              disabled={!shouldTrigger || isPending}
+              className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:bg-gray-300"
             >
-              Set Threshold
-            </button>
-            <button 
-              onClick={handleSignRedeem}
-              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-            >
-              Sign & Redeem Delegation
-            </button>
-            <button 
-              onClick={() => refetchGas()}
-              className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
-            >
-              Refresh ↻
+              {isPending ? 'Bridging...' : 'Bridge Now (0.01 MON fee)'}
             </button>
           </div>
+        )}
 
-          <button 
-            onClick={handleBridgeWithFee}
-            disabled={!shouldTrigger || isPending}
-            className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:bg-gray-300"
-          >
-            {isPending ? 'Bridging...' : 'Bridge Now (0.01 MON fee)'}
-          </button>
-        </div>
-      )}
-      
-      <p className="mt-4 text-gray-600">{status}</p>
-      
-      {!isConnected && (
-        <p className="mt-4">Connect your wallet to see live gas monitoring!</p>
-      )}
-    </main>
+        <p className="mt-4 text-gray-600">{status}</p>
+
+        {!isConnected && <p className="mt-4">Connect your wallet to see live gas monitoring!</p>}
+      </main>
+    </>
   );
 }
