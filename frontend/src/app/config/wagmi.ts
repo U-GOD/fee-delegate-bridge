@@ -1,10 +1,11 @@
-// // src/app/config/wagmi.ts
+// frontend/src/app/config/wagmi.ts
+
 import { createConfig } from 'wagmi';
 import { defineChain } from 'viem';
 import { injected } from 'wagmi/connectors';
 import { http } from 'viem';
 
-// Define Monad testnet chain (custom, as not built-in)
+// Define Monad testnet chain
 export const monadTestnet = defineChain({
   id: 10143,
   name: 'Monad Testnet',
@@ -12,11 +13,11 @@ export const monadTestnet = defineChain({
   nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 },
 });
 
-// Wagmi config (Monad chain, MetaMask connector, RPC transport, disable auto-connect)
+// Wagmi config
 export const config = createConfig({
-  chains: [monadTestnet],  // Use monadTestnet
+  chains: [monadTestnet],
   connectors: [injected()],
-  transports: { [monadTestnet.id]: http() },  // Use monadTestnet.id
-  autoConnect: false,  // Disable auto-connect—require button click
-  ssr: true,  // Enable SSR support for initial state matching
+  transports: { [monadTestnet.id]: http() },
+  autoConnect: false,
+  ssr: true,
 });

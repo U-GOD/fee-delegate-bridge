@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useAccount, useWalletClient, useReadContract, useWriteContract } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { toHex } from 'viem';
+import { createWalletClient, toHex, custom } from 'viem';
 import { bundlerConfig, isBundlerConfigured } from './config/bundler';
 import { useSessionAccount } from '@/hooks/useSessionAccount';
+import { erc7715ProviderActions } from '@metamask/delegation-toolkit/experimental';
+import { monadTestnet } from './config/wagmi';
 
 export default function Home() {
   const { address, isConnected } = useAccount();
@@ -20,6 +22,11 @@ export default function Home() {
     hasSession,
     isLoading: sessionLoading
   } = useSessionAccount();
+
+  const [permissionsGranted, setPermissionsGranted] = useState(false);
+  const [permissionsContext, setPermissionsContext] = useState<string | null>(null);
+  const [delegationManager, setDelegationManager] = useState<`0x${string}` | null>(null);
+  const [isGrantingPermission, setIsGrantingPermission] = useState(false);
   
   useEffect(() => {
     if (isBundlerConfigured()) {
@@ -34,7 +41,6 @@ export default function Home() {
 
   const agentAddress = '0xA2EA4B31f0E36f18DBd5C21De4f82083d6d64E2d';
 
-  // Extended ABI with checkGas function
   const agentAbi = [
     {
       name: 'setGasThreshold',
@@ -67,6 +73,13 @@ export default function Home() {
           ]
         }
       ],
+      outputs: [],
+      stateMutability: 'nonpayable',
+    },
+    {
+      name: 'authorizeSession',
+      type: 'function',
+      inputs: [{ name: '_sessionAccount', type: 'address' }],
       outputs: [],
       stateMutability: 'nonpayable',
     },
@@ -103,13 +116,7 @@ export default function Home() {
   });
 
   // Hook for bridge tx: value for LZ fees (call if shouldTrigger).
-  const { writeContract, isPending, error: writeError} = useWriteContract ({
-    address: agentAddress,
-    abi: agentAbi,
-    functionName: 'checkGasAndBridge',
-    args: [address as `0x${string}`],
-    value: BigInt(10 ** 16), // 0.01 MON in wei (0.01 * 10^18 = 10^16)
-  } as const);
+  const { writeContract, isPending, error: writeError } = useWriteContract();
 
   // Auto-refresh gas data when threshold changes
   useEffect(() => {
@@ -167,57 +174,118 @@ export default function Home() {
     }
   };
 
-  const handleSignRedeem = async () => {
-    if (!walletClient || !address) {
-      setStatus('Wallet not ready - connect wallet first');
-      return;
+  /**
+  * Grant ERC-7715 permissions to session account
+  * 
+  * 1. Shows MetaMask popup asking user to grant permissions
+  * 2. Permission: "Bridge up to 1 ETH over 1 week when gas > threshold"
+  * 3. Stores permission context for later use
+  * 4. Authorizes session account on-chain (calls Agent.authorizeSession)
+  * 
+  * two steps
+  * - Off-chain permission (MetaMask) = User's consent
+  * - On-chain authorization (Agent contract) = Smart contract's record
+  */
+ const handleGrantPermission = async () => {
+  if (!walletClient || !address) {
+    setStatus('❌ Wallet not connected');
+    return;
+  }
+
+  if (!hasSession || !sessionAddress) {
+    setStatus('❌ Please create a session account first');
+    return;
+  }
+
+  setIsGrantingPermission(true);
+  setStatus('📝 Requesting permission from MetaMask...');
+
+  try {
+    // Step 1: Extend wallet client with ERC-7715 actions
+    const extendedClient = createWalletClient({
+      account: address,
+      chain: monadTestnet,
+      transport: custom(window.ethereum), // ✅ Now imports correctly
+    }).extend(erc7715ProviderActions());
+
+    console.log('🔑 Creating permission request...');
+
+    // Step 2: Define permission parameters
+    const currentTime = Math.floor(Date.now() / 1000);
+    const oneWeek = 604800; // 7 days in seconds
+    const expiry = currentTime + oneWeek;
+
+    // Step 3: Request permission from MetaMask
+    // ✅ Type assertion for experimental API
+    const grantedPermissions = await (extendedClient as any).grantPermissions([{
+      chainId: monadTestnet.id,
+      expiry,
+      signer: {
+        type: 'account',
+        data: {
+          address: sessionAddress,
+        },
+      },
+      permissions: [{
+        type: 'native-token-stream',
+        data: {
+          initialAmount: BigInt(0),
+          amountPerSecond: BigInt(1000000000000),
+          maxAmount: BigInt(10 ** 18),
+          startTime: currentTime,
+          justification: 'Automated bridging when gas fees exceed threshold',
+        },
+      }],
+    }]);
+
+    console.log('✅ Permissions granted:', grantedPermissions);
+
+    // Step 4: Extract important data from response
+    const permission = grantedPermissions[0];
+    const context = permission.context as string;
+    const manager = permission.signerMeta?.delegationManager as `0x${string}`;
+
+    if (!context || !manager) {
+      throw new Error('Invalid permission response - missing context or delegation manager');
     }
 
-    setStatus('Starting simple delegation...');
+    // Step 5: Store permission data for later use
+    setPermissionsContext(context);
+    setDelegationManager(manager);
+    setPermissionsGranted(true);
 
-    try {
-      // Ensure on Monad testnet chain
-      const monadId = 10143; 
-      const currentChainId = await walletClient.getChainId();
-      
-      if (currentChainId !== monadId) {
-        setStatus('Switching to Monad testnet...');
-        await walletClient.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: toHex(monadId) }],
-        });
-        setStatus('Chain switched, preparing delegation...');
+    console.log('📋 Permission Context:', context.substring(0, 50) + '...');
+    console.log('🏛️ Delegation Manager:', manager);
+
+    // Step 6: Now authorize session on-chain
+    setStatus('🔄 Authorizing session on Agent contract...');
+
+    const authHash = await walletClient.writeContract({
+      address: agentAddress,
+      abi: agentAbi,
+      functionName: 'authorizeSession',
+      args: [sessionAddress],
+    });
+
+    setStatus(`✅ Permission granted! Session authorized. Tx: ${authHash.substring(0, 10)}...`);
+    console.log('✅ On-chain authorization tx:', authHash);
+
+  } catch (error: unknown) {
+    console.error('❌ Permission error:', error);
+    
+    if (error instanceof Error) {
+      if (error.message.includes('User rejected')) {
+        setStatus('❌ Permission denied by user');
+      } else {
+        setStatus(`❌ Error: ${error.message}`);
       }
-
-      setStatus('Building delegation payload...');
-
-      const delegationPayload = {
-        delegator: address,
-        delegatee: agentAddress as `0x${string}`, // Cast to correct type
-        authority: '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
-        caveats: [] as readonly { enforcer: `0x${string}`; data: `0x${string}` }[],
-        salt: BigInt(Math.floor(Math.random() * 1000000)),
-        expiration: BigInt(Math.floor(Date.now() / 1000) + 86400)
-      };
-
-      console.log('Delegation payload:', delegationPayload);
-
-      setStatus('Redeeming delegation (no signature needed)...');
-
-      const txHash = await walletClient.writeContract({
-        address: agentAddress,
-        abi: agentAbi,
-        functionName: 'redeemDelegationSimple',
-        args: [delegationPayload],
-      });
-
-      setStatus(`Delegation redeemed successfully! Tx: ${txHash}`);
-      
-    } catch (error: unknown) { 
-      console.error('Delegation error:', error);
-      setStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } else {
+      setStatus('❌ Unknown error occurred');
     }
-  };
+  } finally {
+    setIsGrantingPermission(false);
+  }
+};
 
   // Extract gas data for display
   const [currentGas, shouldTrigger] = gasData || [0, false];
@@ -284,12 +352,7 @@ export default function Home() {
               >
                 Set Threshold
               </button>
-              <button
-                onClick={handleSignRedeem}
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-              >
-                Sign & Redeem Delegation
-              </button>
+              
               <button
                 onClick={() => refetchGas()}
                 className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
@@ -305,6 +368,51 @@ export default function Home() {
             >
               {isPending ? 'Bridging...' : 'Bridge Now (0.01 MON fee)'}
             </button>
+          </div>
+        )}
+
+        {/* Permission Request Section */}
+        {isConnected && hasSession && (
+          <div className="p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 mt-4">
+            <h3 className="font-semibold mb-2">🔐 Grant Permission</h3>
+            
+            {permissionsGranted ? (
+              <div className="space-y-2">
+                <p className="text-green-600 font-semibold">✅ Permissions granted!</p>
+                <p className="text-sm text-gray-600">
+                  Your session account can now bridge up to 1 ETH when gas exceeds your threshold.
+                </p>
+                <button
+                  onClick={() => {
+                    setPermissionsGranted(false);
+                    setPermissionsContext(null);
+                    setDelegationManager(null);
+                    setStatus('Permissions revoked locally');
+                  }}
+                  className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
+                >
+                  Clear Permission (Local)
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600 mb-2">
+                  Grant permission for your session account to bridge assets automatically when gas fees spike.
+                </p>
+                <button
+                  onClick={handleGrantPermission}
+                  disabled={isGrantingPermission || !hasSession}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded hover:from-purple-600 hover:to-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {isGrantingPermission ? '⏳ Requesting Permission...' : '🔑 Grant Permission'}
+                </button>
+                {!hasSession && (
+                  <p className="text-sm text-red-500">
+                    Create a session account first
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
 
