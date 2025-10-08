@@ -28,7 +28,6 @@ export const PIMLICO_PAYMASTER_URL = `https://api.pimlico.io/v2/${monadTestnet.i
 
 /**
  * Bundler transport for viem client
- * Use this when creating smart account clients
  */
 export const bundlerTransport = http(PIMLICO_BUNDLER_URL, {
   timeout: 30_000, // 30 second timeout for bundler operations
@@ -43,7 +42,6 @@ export function isBundlerConfigured(): boolean {
 
 /**
  * Bundler configuration object
- * Export this for use in components
  */
 export const bundlerConfig = {
   url: PIMLICO_BUNDLER_URL,
