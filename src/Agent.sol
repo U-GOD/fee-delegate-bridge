@@ -55,6 +55,7 @@ contract Agent {
     event BridgeInitiated(address indexed user, uint32 dstEid, uint256 amount, uint256 fee);
     event BridgeFailed(address indexed user, string reason);
 
+    // DEPRECATED: Use isSessionAuthorized() instead
     // Public getter to return full delegation struct for queries
     function getDelegation(address _delegator) external view returns (Delegation memory) {
         return delegations[_delegator];
@@ -63,6 +64,7 @@ contract Agent {
     // Event emitted on successful delegation redemption for tracking
     event DelegationRedeemed(address indexed delegator, address delegatee, bytes32 authority);
 
+    // DEPRECATED: Use authorizeSession() instead
     // Redeem a signed delegation per ERC-7710: Verify sig, check expiration, store for automation
     function redeemDelegation(Delegation memory _del, bytes memory _signature) external {
         // Memory for simple split
@@ -94,6 +96,7 @@ contract Agent {
         emit DelegationRedeemed(_del.delegator, _del.delegatee, _del.authority);
     }
 
+    // DEPRECATED: Helper for old signature verification
     // Helper to split signature (v, r, s) for ecrecover from memory (standard OpenZeppelin style)
     function splitSignature(bytes memory _signature) internal pure returns (uint8 v, bytes32 r, bytes32 s) {
         require(_signature.length == 65, "Invalid signature length");
@@ -107,6 +110,7 @@ contract Agent {
         }
     }
 
+    // DEPRECATED: Test helper for old delegation system
     // Temp function for testing delegation storage (remove in production)
     function _setDelegation(address _delegator, Delegation memory _del) external {
         delegations[_delegator] = _del; // Direct write to internal mapping
@@ -220,6 +224,7 @@ contract Agent {
         }
     }
 
+    // DEPRECATED: Use authorizeSession() instead
     function redeemDelegationSimple(Delegation memory _del) external {
         require(_del.expiration > block.timestamp, "Delegation expired");
         require(_del.delegator == msg.sender, "Only delegator can redeem");
@@ -230,5 +235,40 @@ contract Agent {
         // Store the delegation
         delegations[_del.delegator] = _del;
         emit DelegationRedeemed(_del.delegator, _del.delegatee, _del.authority);
+    }
+
+    // ============ FRONTEND HELPER FUNCTIONS ============
+
+    /**
+     * @notice Get comprehensive bridge status for a user/session pair
+     * @dev Combines multiple contract reads into one call to reduce frontend RPC overhead
+     * @param _user The user address whose threshold/status to check
+     * @param _sessionAccount The session account trying to bridge
+     * @return hasThreshold True if user has set a non-zero gas threshold
+     * @return isAuthorized True if session is authorized for this user
+     * @return shouldTrigger True if current gas exceeds user's threshold
+     * @return currentGasGwei Current gas price in gwei from oracle
+     */
+    function getBridgeStatus(
+        address _user,
+        address _sessionAccount
+    ) external view returns (
+        bool hasThreshold,
+        bool isAuthorized,
+        bool shouldTrigger,
+        uint256 currentGasGwei
+    ) {
+        // Check if user has set a threshold
+        uint256 threshold = gasThresholds[_user];
+        hasThreshold = threshold > 0;
+        
+        // Check session authorization
+        isAuthorized = authorizedSessions[_user][_sessionAccount];
+        
+        // Get current gas and trigger status
+        (currentGasGwei, shouldTrigger) = this.checkGas(_user);
+        
+        // Return all values (named returns automatically populate)
+        return (hasThreshold, isAuthorized, shouldTrigger, currentGasGwei);
     }
 }
