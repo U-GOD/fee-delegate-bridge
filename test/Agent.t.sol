@@ -177,138 +177,6 @@ contract AgentTest is Test {
         agent.redeemDelegation(del, sig);
     }
 
-    function testCheckGasAndBridge_RevertsNoTrigger() public {
-        address user = address(0x123);
-        vm.prank(user);
-        agent.setGasThreshold(70); // Set 70 gwei threshold
-
-        // Sim low gas (mock 50 <  70 → no trigger)
-        // Assume mock in checkGas returns 50, call expects revert.
-        vm.expectRevert("No trigger: gas below threshold");
-        agent.checkGasAndBridge{value: 0}(user); // Call with zero value (payable ok). 
-    }
-
-    // Test 1: No delegation—expect revert (no perm stored).
-    function testCheckGasAndBridge_RevertsNoDelegation() public {
-        address user = address(0x123);
-        vm.prank(user);
-        agent.setGasThreshold(40);  // Low threshold for trigger sim.
-
-        // Sim high gas (80 >40 → trigger true).
-        // Assume mock in checkGas returns 80—passes trigger, but no delegation.
-        vm.expectRevert("Not delegator");
-        agent.checkGasAndBridge{value: 0}(user);  // Call payable with 0 value.
-    }
-
-    // Test 2: Active delegation—passes (no revert).
-    function testCheckGasAndBridge_PassesWithActiveDelegation() public {
-        address user = address(0x123);
-        vm.prank(user);
-        agent.setGasThreshold(40);  // Low threshold for trigger.
-
-        // Sim high gas (80 >40).
-        // Assume mock 80 gwei—trigger true.
-
-        // Set active delegation (sim Phase 2 redeem).
-        Agent.Delegation memory del = Agent.Delegation({
-            delegator: user,
-            delegatee: address(agent),
-            authority: bytes32(0),
-            caveats: new Agent.Caveat[](0),
-            salt: 1,
-            expiration: block.timestamp + 1 days  // Active for 1 day.
-        });
-        vm.prank(user);
-        agent.redeemDelegationSimple(del);  // Store delegation.
-
-        // Call—passes (no revert, checks delegator/expiration ok).
-        agent.checkGasAndBridge{value: 0.01 ether}(user);
-    }
-
-    // Test 3: Expired delegation—revert.
-    function testCheckGasAndBridge_RevertsExpiredDelegation() public {
-        address user = address(0x123);
-        vm.prank(user);
-        agent.setGasThreshold(40);  // Low threshold for trigger sim.
-
-        // Sim high gas (80 >40 → trigger true).
-        // Assume mock in checkGas returns 80.
-
-        // Set expired delegation (use _setDelegation to bypass redeemSimple check).
-        Agent.Delegation memory del = Agent.Delegation({
-            delegator: user,
-            delegatee: address(agent),
-            authority: bytes32(0),
-            caveats: new Agent.Caveat[](0),
-            salt: 1,
-            expiration: block.timestamp - 1  // Expired.
-        });
-        agent._setDelegation(user, del);  // Direct store for test (temp fn from Phase 2).
-
-        vm.expectRevert("No active delegation");
-        agent.checkGasAndBridge{value: 0}(user);
-    }
-
-    // Test lzSend call—expects endpoint called with correct dstEid/payload/options when checks pass.
-    function testCheckGasAndBridge_CallsLzSendOnTrigger() public {
-        address user = address(0x123);
-        
-        // Setup: Set threshold and delegation
-        vm.prank(user);
-        agent.setGasThreshold(40);
-
-        Agent.Delegation memory del = Agent.Delegation({
-            delegator: user,
-            delegatee: address(agent),
-            authority: bytes32(0),
-            caveats: new Agent.Caveat[](0),
-            salt: 1,
-            expiration: block.timestamp + 1 days
-        });
-        
-        vm.prank(user);
-        agent.redeemDelegationSimple(del);
-
-        // Expect BOTH events now
-        vm.expectEmit(true, true, true, true);
-        emit MockEndpoint.MockLzSend(40204, abi.encode(user, 1 ether, block.timestamp, "BRIDGE_TO_MONAD"), "");
-
-        vm.expectEmit(true, true, false, true);
-        emit Agent.BridgeInitiated(user, 40204, 1 ether, 0.01 ether);
-
-        // Execute the function
-        agent.checkGasAndBridge{value: 0.01 ether}(user);
-    }
-
-    // Test fee quote and require—revert if msg.value < nativeFee, pass if enough.
-    function testCheckGasAndBridge_RevertsInsufficientFee() public {
-        address user = address(0x123);
-        vm.prank(user);
-        agent.setGasThreshold(40);  // Low threshold for trigger.
-
-        // Sim high gas (80 >40 → trigger true).
-        // Assume mock 80 gwei.
-
-        // Set active delegation.
-        Agent.Delegation memory del = Agent.Delegation({
-            delegator: user,
-            delegatee: address(agent),
-            authority: bytes32(0),
-            caveats: new Agent.Caveat[](0),
-            salt: 1,
-            expiration: block.timestamp + 1 days
-        });
-        vm.prank(user);
-        agent.redeemDelegationSimple(del);
-
-        // Case 1: Low value < nativeFee (0.01 ether from mock)—expect revert.
-        vm.expectRevert("Insufficient fee");
-        agent.checkGasAndBridge{value: 0.005 ether}(user);  // Half fee—reverts at require.
-
-        // Case 2: Enough value >= nativeFee—passes (no revert, calls lzSend).
-        agent.checkGasAndBridge{value: 0.01 ether}(user);  // Matches mock quote—succeeds.
-    }
-
     // ============ SESSION AUTHORIZATION TESTS ============
 
     function testAuthorizeSession_Success() public {
@@ -381,5 +249,122 @@ contract AgentTest is Test {
     function testIsSessionAuthorized_DefaultsFalse() public view {
         // Uninitialized session should return false
         assertFalse(agent.isSessionAuthorized(user1, session1));
+    }
+
+    // ============ BRIDGE WITH SESSION AUTH TESTS ============
+
+    function testCheckGasAndBridge_RevertsUnauthorizedSession() public {
+        // Setup: User sets threshold
+        vm.prank(user1);
+        agent.setGasThreshold(40);
+        
+        // Fund the SESSION account, not the test contract
+        vm.deal(session1, 1 ether);
+        
+        // Try to bridge from unauthorized session
+        vm.prank(session1); // Not authorized yet
+        vm.expectRevert("Caller not authorized session");
+        agent.checkGasAndBridge{value: 0.01 ether}(user1);
+    }
+
+    function testCheckGasAndBridge_SucceedsWithAuthorization() public {
+        // Setup: Threshold + authorization
+        vm.prank(user1);
+        agent.setGasThreshold(40);
+        
+        vm.prank(user1);
+        agent.authorizeSession(session1);
+        
+        // Fund the SESSION account
+        vm.deal(session1, 1 ether);
+        
+        // Expect events in the ORDER they will be emitted
+        // MockLzSend comes FIRST (from the endpoint call)
+        vm.expectEmit(true, false, false, true);
+        emit MockEndpoint.MockLzSend(40204, abi.encode(user1, 1 ether, block.timestamp, "BRIDGE_TO_MONAD"), "");
+        
+        // BridgeInitiated comes SECOND (from the agent contract)
+        vm.expectEmit(true, true, false, true);
+        emit Agent.BridgeInitiated(user1, 40204, 1 ether, 0.01 ether);
+        
+        // Bridge as authorized session
+        vm.prank(session1);
+        agent.checkGasAndBridge{value: 0.01 ether}(user1);
+    }
+
+    function testCheckGasAndBridge_RevertsAfterRevocation() public {
+        // Setup: Authorize then revoke
+        vm.prank(user1);
+        agent.setGasThreshold(40);
+        
+        vm.prank(user1);
+        agent.authorizeSession(session1);
+        
+        vm.prank(user1);
+        agent.revokeSession(session1);
+        
+        // Fund SESSION account
+        vm.deal(session1, 1 ether);
+        
+        // Try to bridge after revocation
+        vm.prank(session1);
+        vm.expectRevert("Caller not authorized session");
+        agent.checkGasAndBridge{value: 0.01 ether}(user1);
+    }
+
+    function testCheckGasAndBridge_SessionCanBridgeForCorrectUser() public {
+        address user2 = address(0x456);
+        
+        // User1 authorizes session1
+        vm.prank(user1);
+        agent.setGasThreshold(40);
+        vm.prank(user1);
+        agent.authorizeSession(session1);
+        
+        // User2 sets their threshold but does NOT authorize session1
+        vm.prank(user2);
+        agent.setGasThreshold(40);
+        
+        // Fund SESSION account
+        vm.deal(session1, 1 ether);
+        
+        // Session1 should NOT be able to bridge for user2
+        vm.prank(session1);
+        vm.expectRevert("Caller not authorized session");
+        agent.checkGasAndBridge{value: 0.01 ether}(user2);
+    }
+
+    function testCheckGasAndBridge_RevertsNoTrigger() public {
+        // Setup: High threshold (won't trigger with mock gas of 50)
+        vm.prank(user1);
+        agent.setGasThreshold(70);
+        
+        vm.prank(user1);
+        agent.authorizeSession(session1);
+        
+        // Fund SESSION account
+        vm.deal(session1, 1 ether);
+        
+        // Should revert because gas is below threshold
+        vm.prank(session1);
+        vm.expectRevert("No trigger: gas below threshold");
+        agent.checkGasAndBridge{value: 0.01 ether}(user1);
+    }
+
+    function testCheckGasAndBridge_RevertsInsufficientFee() public {
+        // Setup authorized bridge
+        vm.prank(user1);
+        agent.setGasThreshold(40);
+        
+        vm.prank(user1);
+        agent.authorizeSession(session1);
+        
+        // Fund SESSION account
+        vm.deal(session1, 1 ether);
+        
+        // Try to bridge with too little value (mock requires 0.01 ETH)
+        vm.prank(session1);
+        vm.expectRevert("Insufficient fee");
+        agent.checkGasAndBridge{value: 0.005 ether}(user1); // Only half
     }
 }

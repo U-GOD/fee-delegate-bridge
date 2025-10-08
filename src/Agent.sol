@@ -195,49 +195,25 @@ contract Agent {
         shouldTrigger = (userThreshold > 0) && (currentGasGwei > userThreshold);
     }
 
-    // Auto-bridge if gas trigger, payable for LZ fees
     function checkGasAndBridge(address _user) external payable { 
         (, bool shouldTrigger) = this.checkGas(_user);
-        if (!shouldTrigger) {
-            revert("No trigger: gas below threshold");
-        }
+        require(shouldTrigger, "No trigger: gas below threshold");
         
-        Delegation memory del = delegations[_user];
-        require(del.delegator == _user, "Not delegator");
-        require(del.expiration > block.timestamp, "No active delegation");
-
-        uint32 dstEid = 40204; // Monad testnet destination ID
-        
-        // Enhanced payload structure
-        bytes memory message = abi.encode(
-            _user,                    
-            1 ether,                    
-            block.timestamp,          
-            "BRIDGE_TO_MONAD"         
+        require(
+            authorizedSessions[_user][msg.sender],
+            "Caller not authorized session"
         );
         
-        bytes memory options = ""; 
-
-        // Get fee quote from LayerZero
-        (uint256 nativeFee, ) = ENDPOINT.quote(
-            dstEid,
-            message,
-            false,  // payInZRO = false (use native token)
-            options
-        );
+        uint32 dstEid = 40204;
+        bytes memory message = abi.encode(_user, 1 ether, block.timestamp, "BRIDGE_TO_MONAD");
+        bytes memory options = "";
         
+        (uint256 nativeFee, ) = ENDPOINT.quote(dstEid, message, false, options);
         require(msg.value >= nativeFee, "Insufficient fee");
-
-        // Call LayerZero
-        ENDPOINT.lzSend{value: nativeFee}(
-            dstEid,
-            message,
-            options
-        );
         
+        ENDPOINT.lzSend{value: nativeFee}(dstEid, message, options);
         emit BridgeInitiated(_user, dstEid, 1 ether, nativeFee);
         
-        // Refund any extra value
         uint256 extra = msg.value - nativeFee;
         if (extra > 0) {
             payable(msg.sender).transfer(extra);
