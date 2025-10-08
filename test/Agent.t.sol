@@ -10,11 +10,19 @@ import {MockEndpoint} from "./MockEndpoint.sol";
 contract AgentTest is Test {
     Agent public agent;
 
+    address user1;
+    address session1;
+    address session2;
+
     MockEndpoint public mockEndpoint;
 
     function setUp() public {
         mockEndpoint = new MockEndpoint();  // Deploy mock endpoint.
         agent = new Agent(address(0), address(mockEndpoint)); // Dummy oracle/endpoint for non-bridging tests.
+
+        user1 = address(0x123);
+        session1 = address(0xABC);  
+        session2 = address(0xDEF);
     }
 
     function testConstructor_SetsOwnerCorrectly() public view {
@@ -299,5 +307,79 @@ contract AgentTest is Test {
 
         // Case 2: Enough value >= nativeFee—passes (no revert, calls lzSend).
         agent.checkGasAndBridge{value: 0.01 ether}(user);  // Matches mock quote—succeeds.
+    }
+
+    // ============ SESSION AUTHORIZATION TESTS ============
+
+    function testAuthorizeSession_Success() public {
+        // User authorizes a session account
+        vm.prank(user1);
+        agent.authorizeSession(session1);
+        
+        // Verify session is authorized
+        assertTrue(agent.isSessionAuthorized(user1, session1));
+        
+        // Verify timestamp was recorded
+        assertGt(agent.sessionAuthorizedAt(user1, session1), 0);
+    }
+
+    function testAuthorizeSession_EmitsEvent() public {
+        vm.prank(user1);
+        
+        // Expect event with correct parameters
+        vm.expectEmit(true, true, false, true);
+        emit Agent.SessionAuthorized(user1, session1, block.timestamp);
+        
+        agent.authorizeSession(session1);
+    }
+
+    function testAuthorizeSession_RevertsZeroAddress() public {
+        vm.prank(user1);
+        vm.expectRevert("Invalid session address");
+        agent.authorizeSession(address(0));
+    }
+
+    function testAuthorizeSession_RevertsSelfAuthorization() public {
+        vm.prank(user1);
+        vm.expectRevert("Cannot authorize self as session");
+        agent.authorizeSession(user1);  // Trying to authorize self
+    }
+
+    function testRevokeSession_Success() public {
+        // First authorize
+        vm.prank(user1);
+        agent.authorizeSession(session1);
+        
+        // Then revoke
+        vm.prank(user1);
+        agent.revokeSession(session1);
+        
+        // Verify no longer authorized
+        assertFalse(agent.isSessionAuthorized(user1, session1));
+    }
+
+    function testRevokeSession_RevertsIfNotAuthorized() public {
+        vm.prank(user1);
+        vm.expectRevert("Session not authorized");
+        agent.revokeSession(session1);  // Never authorized
+    }
+
+    function testAuthorizeSession_MultipleSessionsPerUser() public {
+        vm.startPrank(user1);
+        
+        // Authorize two different sessions
+        agent.authorizeSession(session1);
+        agent.authorizeSession(session2);
+        
+        vm.stopPrank();
+        
+        // Both should be authorized independently
+        assertTrue(agent.isSessionAuthorized(user1, session1));
+        assertTrue(agent.isSessionAuthorized(user1, session2));
+    }
+
+    function testIsSessionAuthorized_DefaultsFalse() public view {
+        // Uninitialized session should return false
+        assertFalse(agent.isSessionAuthorized(user1, session1));
     }
 }
