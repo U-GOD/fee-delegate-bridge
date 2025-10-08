@@ -25,6 +25,13 @@ contract Agent {
     // Mapping for user-specific gas thresholds to enable personalized automation
     mapping(address => uint256) public gasThresholds;
 
+    // Session account authorization: user → session address → authorized status
+    // Allows users to authorize multiple ephemeral accounts for delegated actions
+    mapping(address => mapping(address => bool)) public authorizedSessions;
+
+    // Track when sessions were authorized (for frontend display/debugging)
+    mapping(address => mapping(address => uint256)) public sessionAuthorizedAt;
+
     // Struct for caveat rules (limits on actions like max amount to bridge)
     struct Caveat {
         address enforcer; // Contract enforcing the caveat
@@ -114,12 +121,56 @@ contract Agent {
     }
 
     function getGasThreshold(address _user) external view returns (uint256) {
-        return gasThresholds[_user]; // Simple read for querying user settings
+        return gasThresholds[_user];
     }
 
-    // Mock fallback for testnet (sim gas—use real oracle in prod for live data).
+    event SessionAuthorized(address indexed user, address indexed sessionAccount, uint256 timestamp);
+    event SessionRevoked(address indexed user, address indexed sessionAccount);
+
+    /**
+     * @notice Authorize a session account to act on behalf of the caller
+     * @dev Only the user (msg.sender) can authorize sessions for themselves
+     * @param _sessionAccount Address of the ephemeral session account to authorize
+     */
+    function authorizeSession(address _sessionAccount) external {
+        require(_sessionAccount != address(0), "Invalid session address");
+        require(_sessionAccount != msg.sender, "Cannot authorize self as session");
+        
+        // Mark session as authorized for this user
+        authorizedSessions[msg.sender][_sessionAccount] = true;
+        sessionAuthorizedAt[msg.sender][_sessionAccount] = block.timestamp;
+        
+        emit SessionAuthorized(msg.sender, _sessionAccount, block.timestamp);
+    }
+
+    /**
+     * @notice Revoke authorization for a session account
+     * @dev Only the user can revoke their own sessions
+     * @param _sessionAccount Address of the session account to revoke
+     */
+    function revokeSession(address _sessionAccount) external {
+        require(authorizedSessions[msg.sender][_sessionAccount], "Session not authorized");
+        
+        // Remove authorization
+        authorizedSessions[msg.sender][_sessionAccount] = false;
+        
+        emit SessionRevoked(msg.sender, _sessionAccount);
+    }
+
+    /**
+     * @notice Check if a session account is authorized for a user
+     * @dev Public view function for easy frontend queries
+     * @param _user The user address
+     * @param _sessionAccount The session account to check
+     * @return bool True if session is authorized
+     */
+    function isSessionAuthorized(address _user, address _sessionAccount) external view returns (bool) {
+        return authorizedSessions[_user][_sessionAccount];
+    }
+
+    // Mock fallback for testnet
     function getMockGas() internal pure returns (uint256) {
-        return 50;  // Fixed 50 gwei—tweak to sim spikes (e.g., 100 for trigger test).
+        return 50;  // Fixed 50 gwei—tweak to sim spikes
     }
 
     // Check current ETH gas vs. user's threshold—core trigger for auto-bridging (returns gwei + bool).
@@ -144,7 +195,7 @@ contract Agent {
         shouldTrigger = (userThreshold > 0) && (currentGasGwei > userThreshold);
     }
 
-    // Auto-bridge if gas trigger, payable for LZ fees (combines check +  send under delegation)
+    // Auto-bridge if gas trigger, payable for LZ fees
     function checkGasAndBridge(address _user) external payable { 
         (, bool shouldTrigger) = this.checkGas(_user);
         if (!shouldTrigger) {
@@ -159,13 +210,13 @@ contract Agent {
         
         // Enhanced payload structure
         bytes memory message = abi.encode(
-            _user,                    // sender address
-            1 ether,                  // amount  
-            block.timestamp,          // timestamp
-            "BRIDGE_TO_MONAD"         // action type
+            _user,                    
+            1 ether,                    
+            block.timestamp,          
+            "BRIDGE_TO_MONAD"         
         );
         
-        bytes memory options = ""; // Default options
+        bytes memory options = ""; 
 
         // Get fee quote from LayerZero
         (uint256 nativeFee, ) = ENDPOINT.quote(
@@ -175,7 +226,6 @@ contract Agent {
             options
         );
         
-        // FIXED: Simple error message
         require(msg.value >= nativeFee, "Insufficient fee");
 
         // Call LayerZero
@@ -194,7 +244,6 @@ contract Agent {
         }
     }
 
-    // Add this NEW function for Phase 2 testing (we'll remove it later)
     function redeemDelegationSimple(Delegation memory _del) external {
         require(_del.expiration > block.timestamp, "Delegation expired");
         require(_del.delegator == msg.sender, "Only delegator can redeem");
