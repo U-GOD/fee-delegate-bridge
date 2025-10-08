@@ -61,121 +61,127 @@ contract AgentTest is Test {
         assertEq(agent.getGasThreshold(unsetUser), 0); // Default mapping value
     }
 
-    function testStoreDelegation_SetsCorrectly() public {
-        address delegator = address(0xABC);
-        Agent.Caveat[] memory caveats = new Agent.Caveat[](1);
-        caveats[0] = Agent.Caveat({enforcer: address(0xDEF), data: abi.encode(50)});
+    // ============================================
+    // DEPRECATED DELEGATION TESTS
+    // These test the old manual delegation system
+    // Kept for reference but no longer used in production
+    // ============================================
 
-        Agent.Delegation memory del = Agent.Delegation({
-            delegator: delegator,
-            delegatee: address(agent),
-            authority: keccak256(abi.encode("root")), // Proper hash for authority
-            caveats: caveats,
-            salt: 1,
-            expiration: block.timestamp + 1 days
-        });
+    // function testStoreDelegation_SetsCorrectly() public {
+    //     address delegator = address(0xABC);
+    //     Agent.Caveat[] memory caveats = new Agent.Caveat[](1);
+    //     caveats[0] = Agent.Caveat({enforcer: address(0xDEF), data: abi.encode(50)});
 
-        agent._setDelegation(delegator, del); // Use setter for assignment
+    //     Agent.Delegation memory del = Agent.Delegation({
+    //         delegator: delegator,
+    //         delegatee: address(agent),
+    //         authority: keccak256(abi.encode("root")), // Proper hash for authority
+    //         caveats: caveats,
+    //         salt: 1,
+    //         expiration: block.timestamp + 1 days
+    //     });
 
-        Agent.Delegation memory stored = agent.getDelegation(delegator); // Use explicit getter
-        assertEq(stored.delegator, delegator);
-        assertEq(stored.delegatee, address(agent));
-        assertEq(stored.caveats[0].enforcer, address(0xDEF));
-        assertEq(stored.salt, 1);
-    }
+    //     agent._setDelegation(delegator, del); // Use setter for assignment
 
-    function testStoreDelegation_DefaultsToEmpty() public view {
-        address unset = address(0x999);
-        Agent.Delegation memory del = agent.getDelegation(unset); // Use explicit getter
-        assertEq(del.delegator, address(0)); // Defaults to zero/empty
-        assertEq(del.caveats.length, 0);
-    }
+    //     Agent.Delegation memory stored = agent.getDelegation(delegator); // Use explicit getter
+    //     assertEq(stored.delegator, delegator);
+    //     assertEq(stored.delegatee, address(agent));
+    //     assertEq(stored.caveats[0].enforcer, address(0xDEF));
+    //     assertEq(stored.salt, 1);
+    // }
 
-    function testRedeemDelegation_StoresAndVerifies() public {
-        uint256 privateKey = 0x123; // Mock private key
-        address delegator = vm.addr(privateKey); // Derive delegator from key for sig match
-        Agent.Caveat[] memory caveats = new Agent.Caveat[](0); // Empty array to simplify ABI encoding for hash match
+    // function testStoreDelegation_DefaultsToEmpty() public view {
+    //     address unset = address(0x999);
+    //     Agent.Delegation memory del = agent.getDelegation(unset); // Use explicit getter
+    //     assertEq(del.delegator, address(0)); // Defaults to zero/empty
+    //     assertEq(del.caveats.length, 0);
+    // }
 
-        Agent.Delegation memory del = Agent.Delegation({
-            delegator: delegator, // Matches derived address
-            delegatee: address(agent),
-            authority: keccak256(abi.encodePacked("root")), // Fixed bytes32 hash for consistency
-            caveats: caveats,
-            salt: 1,
-            expiration: block.timestamp + 1 days
-        });
+    // function testRedeemDelegation_StoresAndVerifies() public {
+    //     uint256 privateKey = 0x123; // Mock private key
+    //     address delegator = vm.addr(privateKey); // Derive delegator from key for sig match
+    //     Agent.Caveat[] memory caveats = new Agent.Caveat[](0); // Empty array to simplify ABI encoding for hash match
 
-        // Mock signature from delegator on payload hash (matches contract's abi.encode)
-        bytes32 payloadHash = keccak256(abi.encode(del));
-        bytes32 ethHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", payloadHash));
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ethHash);
-        bytes memory sig = abi.encodePacked(r, s, v);
+    //     Agent.Delegation memory del = Agent.Delegation({
+    //         delegator: delegator, // Matches derived address
+    //         delegatee: address(agent),
+    //         authority: keccak256(abi.encodePacked("root")), // Fixed bytes32 hash for consistency
+    //         caveats: caveats,
+    //         salt: 1,
+    //         expiration: block.timestamp + 1 days
+    //     });
 
-        // Expect event before call (single check to avoid log mismatch)
-        vm.expectEmit(true, true, false, true);
-        emit Agent.DelegationRedeemed(delegator, address(agent), del.authority); // Qualified for test context
+    //     // Mock signature from delegator on payload hash (matches contract's abi.encode)
+    //     bytes32 payloadHash = keccak256(abi.encode(del));
+    //     bytes32 ethHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", payloadHash));
+    //     (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ethHash);
+    //     bytes memory sig = abi.encodePacked(r, s, v);
 
-        // Prank as frontend caller to redeem
-        vm.prank(address(0x1234567890123456789012345678901234567890));
-        agent.redeemDelegation(del, sig);
+    //     // Expect event before call (single check to avoid log mismatch)
+    //     vm.expectEmit(true, true, false, true);
+    //     emit Agent.DelegationRedeemed(delegator, address(agent), del.authority); // Qualified for test context
 
-        // Assert stored after successful redemption (confirms no revert, sig verified)
-        Agent.Delegation memory stored = agent.getDelegation(delegator);
-        assertEq(stored.delegator, delegator);
-        assertEq(stored.salt, 1);
-        assertEq(stored.expiration, del.expiration); // Verify full struct stored
-    }
+    //     // Prank as frontend caller to redeem
+    //     vm.prank(address(0x1234567890123456789012345678901234567890));
+    //     agent.redeemDelegation(del, sig);
 
-    function testRedeemDelegation_RevertsInvalidSig() public {
-        address delegator = address(0xABC);
-        Agent.Caveat[] memory caveats = new Agent.Caveat[](1);
-        caveats[0] = Agent.Caveat({enforcer: address(0xDEF), data: abi.encode(50)});
+    //     // Assert stored after successful redemption (confirms no revert, sig verified)
+    //     Agent.Delegation memory stored = agent.getDelegation(delegator);
+    //     assertEq(stored.delegator, delegator);
+    //     assertEq(stored.salt, 1);
+    //     assertEq(stored.expiration, del.expiration); // Verify full struct stored
+    // }
 
-        Agent.Delegation memory del = Agent.Delegation({
-            delegator: delegator,
-            delegatee: address(agent),
-            authority: keccak256(abi.encode("root")),
-            caveats: caveats,
-            salt: 1,
-            expiration: block.timestamp + 1 days
-        });
+    // function testRedeemDelegation_RevertsInvalidSig() public {
+    //     address delegator = address(0xABC);
+    //     Agent.Caveat[] memory caveats = new Agent.Caveat[](1);
+    //     caveats[0] = Agent.Caveat({enforcer: address(0xDEF), data: abi.encode(50)});
 
-        // Invalid sig (wrong private key)
-        bytes32 payloadHash = keccak256(abi.encode(del));
-        bytes32 ethHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", payloadHash));
-        uint256 wrongKey = 0x456;
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(wrongKey, ethHash);
-        bytes memory sig = abi.encodePacked(r, s, v);
+    //     Agent.Delegation memory del = Agent.Delegation({
+    //         delegator: delegator,
+    //         delegatee: address(agent),
+    //         authority: keccak256(abi.encode("root")),
+    //         caveats: caveats,
+    //         salt: 1,
+    //         expiration: block.timestamp + 1 days
+    //     });
 
-        vm.prank(address(0x1234567890123456789012345678901234567890));
-        vm.expectRevert("Invalid signature");
-        agent.redeemDelegation(del, sig);
-    }
+    //     // Invalid sig (wrong private key)
+    //     bytes32 payloadHash = keccak256(abi.encode(del));
+    //     bytes32 ethHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", payloadHash));
+    //     uint256 wrongKey = 0x456;
+    //     (uint8 v, bytes32 r, bytes32 s) = vm.sign(wrongKey, ethHash);
+    //     bytes memory sig = abi.encodePacked(r, s, v);
 
-    function testRedeemDelegation_RevertsExpired() public {
-        address delegator = address(0xABC);
-        Agent.Caveat[] memory caveats = new Agent.Caveat[](0); // Empty for simple
+    //     vm.prank(address(0x1234567890123456789012345678901234567890));
+    //     vm.expectRevert("Invalid signature");
+    //     agent.redeemDelegation(del, sig);
+    // }
 
-        Agent.Delegation memory del = Agent.Delegation({
-            delegator: delegator,
-            delegatee: address(agent),
-            authority: keccak256(abi.encode("root")),
-            caveats: caveats,
-            salt: 1,
-            expiration: block.timestamp - 1 // Expired
-        });
+    // function testRedeemDelegation_RevertsExpired() public {
+    //     address delegator = address(0xABC);
+    //     Agent.Caveat[] memory caveats = new Agent.Caveat[](0); // Empty for simple
 
-        // Mock valid sig but expired
-        bytes32 payloadHash = keccak256(abi.encode(del));
-        bytes32 ethHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", payloadHash));
-        uint256 privateKey = 0x123;
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ethHash);
-        bytes memory sig = abi.encodePacked(r, s, v);
+    //     Agent.Delegation memory del = Agent.Delegation({
+    //         delegator: delegator,
+    //         delegatee: address(agent),
+    //         authority: keccak256(abi.encode("root")),
+    //         caveats: caveats,
+    //         salt: 1,
+    //         expiration: block.timestamp - 1 // Expired
+    //     });
 
-        vm.prank(address(0x1234567890123456789012345678901234567890));
-        vm.expectRevert("Delegation expired");
-        agent.redeemDelegation(del, sig);
-    }
+    //     // Mock valid sig but expired
+    //     bytes32 payloadHash = keccak256(abi.encode(del));
+    //     bytes32 ethHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", payloadHash));
+    //     uint256 privateKey = 0x123;
+    //     (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ethHash);
+    //     bytes memory sig = abi.encodePacked(r, s, v);
+
+    //     vm.prank(address(0x1234567890123456789012345678901234567890));
+    //     vm.expectRevert("Delegation expired");
+    //     agent.redeemDelegation(del, sig);
+    // }
 
     // ============ SESSION AUTHORIZATION TESTS ============
 
@@ -249,6 +255,96 @@ contract AgentTest is Test {
     function testIsSessionAuthorized_DefaultsFalse() public view {
         // Uninitialized session should return false
         assertFalse(agent.isSessionAuthorized(user1, session1));
+    }
+
+    // ============ HELPER FUNCTION TESTS ============
+
+    function testGetBridgeStatus_AllFalseForNewUser() public view {
+        // Brand new user with no setup
+        (bool hasThreshold, bool isAuthorized, bool shouldTrigger, uint256 currentGas) = 
+            agent.getBridgeStatus(user1, session1);
+        
+        assertFalse(hasThreshold, "Should have no threshold");
+        assertFalse(isAuthorized, "Should not be authorized");
+        assertFalse(shouldTrigger, "Should not trigger");
+        assertEq(currentGas, 50, "Should return mock gas");
+    }
+
+    function testGetBridgeStatus_WithThresholdOnly() public {
+        // User sets threshold but no authorization
+        vm.prank(user1);
+        agent.setGasThreshold(40);
+        
+        (bool hasThreshold, bool isAuthorized, bool shouldTrigger, uint256 currentGas) = 
+            agent.getBridgeStatus(user1, session1);
+        
+        assertTrue(hasThreshold, "Should have threshold");
+        assertFalse(isAuthorized, "Should not be authorized");
+        assertTrue(shouldTrigger, "Should trigger (50 > 40)");
+        assertEq(currentGas, 50, "Should return mock gas");
+    }
+
+    function testGetBridgeStatus_WithAuthorizationOnly() public {
+        // User authorizes but no threshold
+        vm.prank(user1);
+        agent.authorizeSession(session1);
+        
+        (bool hasThreshold, bool isAuthorized, bool shouldTrigger, uint256 currentGas) = 
+            agent.getBridgeStatus(user1, session1);
+        
+        assertFalse(hasThreshold, "Should have no threshold");
+        assertTrue(isAuthorized, "Should be authorized");
+        assertFalse(shouldTrigger, "Should not trigger (no threshold)");
+        assertEq(currentGas, 50, "Should return mock gas");
+    }
+
+    function testGetBridgeStatus_FullyConfigured() public {
+        // User sets everything up correctly
+        vm.startPrank(user1);
+        agent.setGasThreshold(40);
+        agent.authorizeSession(session1);
+        vm.stopPrank();
+        
+        (bool hasThreshold, bool isAuthorized, bool shouldTrigger, uint256 currentGas) = 
+            agent.getBridgeStatus(user1, session1);
+        
+        assertTrue(hasThreshold, "Should have threshold");
+        assertTrue(isAuthorized, "Should be authorized");
+        assertTrue(shouldTrigger, "Should trigger (50 > 40)");
+        assertEq(currentGas, 50, "Should return mock gas");
+    }
+
+    function testGetBridgeStatus_HighThresholdNoTrigger() public {
+        // User sets high threshold that won't trigger
+        vm.startPrank(user1);
+        agent.setGasThreshold(70); // Higher than mock gas of 50
+        agent.authorizeSession(session1);
+        vm.stopPrank();
+        
+        (bool hasThreshold, bool isAuthorized, bool shouldTrigger, uint256 currentGas) = 
+            agent.getBridgeStatus(user1, session1);
+        
+        assertTrue(hasThreshold, "Should have threshold");
+        assertTrue(isAuthorized, "Should be authorized");
+        assertFalse(shouldTrigger, "Should NOT trigger (50 < 70)");
+        assertEq(currentGas, 50, "Should return mock gas");
+    }
+
+    function testGetBridgeStatus_DifferentSessionsIndependent() public {
+        // User authorizes session1 but checks session2
+        vm.startPrank(user1);
+        agent.setGasThreshold(40);
+        agent.authorizeSession(session1);
+        vm.stopPrank();
+        
+        // Check with session2 (not authorized)
+        (bool hasThreshold, bool isAuthorized, bool shouldTrigger, uint256 currentGas) = 
+            agent.getBridgeStatus(user1, session2);
+        
+        assertTrue(hasThreshold, "Should have threshold");
+        assertFalse(isAuthorized, "Session2 should NOT be authorized");
+        assertTrue(shouldTrigger, "Should trigger (gas check independent)");
+        assertEq(currentGas, 50, "Should return mock gas");
     }
 
     // ============ BRIDGE WITH SESSION AUTH TESTS ============
