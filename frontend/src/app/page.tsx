@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useAccount, useWalletClient, useReadContract, useWriteContract } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { toHex } from 'viem';
-import Header from '@/components/Header';
+
+import { bundlerConfig, isBundlerConfigured } from './config/bundler';
 
 export default function Home() {
   const { address, isConnected } = useAccount();
@@ -13,6 +14,17 @@ export default function Home() {
   const [status, setStatus] = useState('');
 
   const agentAddress = '0xA2EA4B31f0E36f18DBd5C21De4f82083d6d64E2d';
+
+  useEffect(() => {
+    if (isBundlerConfigured()) {
+      console.log('✅ Bundler configured:', {
+        chainId: bundlerConfig.chainId,
+        url: bundlerConfig.url.substring(0, 50) + '...', // Hide full API key
+      });
+    } else {
+      console.warn('⚠️ Bundler not configured - check .env.local');
+    }
+  }, []);
 
   // Extended ABI with checkGas function
   const agentAbi = [
@@ -204,8 +216,8 @@ export default function Home() {
 
   return (
     <>
-      {/* Header section (new file) */}
-      <Header />
+      {/* Header section (new file)
+      <Header /> */}
 
       {/* Main content section (your existing code) */}
       <main className="p-8">
