@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useAccount, useWalletClient, useReadContract, useWriteContract } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { toHex } from 'viem';
-
 import { bundlerConfig, isBundlerConfigured } from './config/bundler';
+import { useSessionAccount } from '@/hooks/useSessionAccount';
 
 export default function Home() {
   const { address, isConnected } = useAccount();
@@ -13,8 +13,14 @@ export default function Home() {
   const [threshold, setThreshold] = useState('');
   const [status, setStatus] = useState('');
 
-  const agentAddress = '0xA2EA4B31f0E36f18DBd5C21De4f82083d6d64E2d';
-
+  const {
+    sessionAddress,
+    createSession,
+    revokeSession,
+    hasSession,
+    isLoading: sessionLoading
+  } = useSessionAccount();
+  
   useEffect(() => {
     if (isBundlerConfigured()) {
       console.log('✅ Bundler configured:', {
@@ -22,9 +28,11 @@ export default function Home() {
         url: bundlerConfig.url.substring(0, 50) + '...', // Hide full API key
       });
     } else {
-      console.warn('⚠️ Bundler not configured - check .env.local');
+      console.warn('⚠️ Bundler not configured, check .env.local');
     }
   }, []);
+
+  const agentAddress = '0xA2EA4B31f0E36f18DBd5C21De4f82083d6d64E2d';
 
   // Extended ABI with checkGas function
   const agentAbi = [
@@ -297,6 +305,45 @@ export default function Home() {
             >
               {isPending ? 'Bridging...' : 'Bridge Now (0.01 MON fee)'}
             </button>
+          </div>
+        )}
+
+        {/* Session Account Display */}
+        {isConnected && (
+          <div className="p-4 border rounded-lg bg-blue-50 mt-4">
+            <h3 className="font-semibold mb-2">Session Account Status</h3>
+            
+            {sessionLoading ? (
+              <p>Loading session...</p>
+            ) : hasSession ? (
+              <div className="space-y-2">
+                <p>
+                  <strong>Session Address:</strong>{' '}
+                  <code className="text-sm bg-gray-200 px-2 py-1 rounded">
+                    {sessionAddress?.substring(0, 6)}...{sessionAddress?.substring(38)}
+                  </code>
+                </p>
+                <p className="text-sm text-green-600">✅ Session active</p>
+                <button
+                  onClick={revokeSession}
+                  className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+                >
+                  Revoke Session
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">
+                  No session account yet. Create one to enable automated bridging.
+                </p>
+                <button
+                  onClick={createSession}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Create Session Account
+                </button>
+              </div>
+            )}
           </div>
         )}
 
