@@ -19,9 +19,7 @@ This is a monorepo with:
 
 ## Deployments
 
-Deployed Agent: 0x9b52dF03bbB3B20dDcb793100984425eD80ac5fD on Base Sepolia (tx :0xe8d4dfca3765ff9b91422b34d50d9ff4928db6b7d721531e712da941aba43f32)
-
-Switched to Monad testnet - Agent: 0xa5262b3CF38fA74010A3873974b17EF53b81deE3 (tx: 0x6641eb1b7cd32ecd1536e18380a302cf4e8715d0cc555039a73a8619e71d15e1)
+Monad testnet Agent: 0x7B6831D2d1d65884cB1AFc051A364d8FEc2c444D (tx: 0x9dbdee84d120b8d45d828d92320b5fb1dde1c4bd1e617b57025c4106b74106b77ab4d5)
 
 ## Prerequisites
 
