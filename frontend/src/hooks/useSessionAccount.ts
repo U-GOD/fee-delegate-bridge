@@ -5,146 +5,127 @@
 import { useState, useEffect, useCallback } from 'react';
 import { privateKeyToAccount } from 'viem/accounts';
 import { generatePrivateKey } from 'viem/accounts';
+import { createPublicClient, http } from 'viem';
 import type { Address } from 'viem';
+import { monadTestnet } from '@/app/config/wagmi';
+import { toMetaMaskSmartAccount, Implementation } from '@metamask/delegation-toolkit';
 
-/**
- * Custom React hook for managing ephemeral session accounts
- * 
- * Session account:
- * - A temporary wallet with its own private key
- * - Created in the browser, lives only on this device
- * - User authorizes it to act on their behalf
- * - Can be revoked at any time
- * 
- * Security considerations:
- * - Private key stored in localStorage (acceptable for hackathon/testnet)
- * - In production, consider using browser's IndexedDB with encryption
- * - Session accounts have limited permissions (only what user grants)
- * 
- * Similar to: JWT tokens, API keys, SSH keys
- */
-
-// LocalStorage key for session private key
 const SESSION_KEY = 'fee_delegate_session_key';
 
 interface UseSessionAccountReturn {
-  // The session account's address (or null if none exists)
   sessionAddress: Address | null;
-  
-  // The private key (for signing, never expose to UI)
   sessionPrivateKey: `0x${string}` | null;
-  
-  // Create a new session account (generates new key)
-  createSession: () => void;
-  
-  // Delete the current session
+  smartAccount: any | null; // MetaMask Smart Account
+  createSession: () => Promise<void>;
   revokeSession: () => void;
-  
-  // Check if session exists
   hasSession: boolean;
-  
-  // Loading state
   isLoading: boolean;
 }
 
 export function useSessionAccount(): UseSessionAccountReturn {
   const [sessionPrivateKey, setSessionPrivateKey] = useState<`0x${string}` | null>(null);
   const [sessionAddress, setSessionAddress] = useState<Address | null>(null);
+  const [smartAccount, setSmartAccount] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  /**
-   * Load existing session from localStorage on mount
-   * This runs once when the component using this hook first renders
-   */
+  // Load existing session
   useEffect(() => {
-    try {
-      // Check if we're in the browser (not SSR)
-      if (typeof window === 'undefined') {
+    const loadSession = async () => {
+      try {
+        if (typeof window === 'undefined') {
+          setIsLoading(false);
+          return;
+        }
+
+        const storedKey = localStorage.getItem(SESSION_KEY);
+        
+        if (storedKey && storedKey.startsWith('0x')) {
+          const account = privateKeyToAccount(storedKey as `0x${string}`);
+          
+          // Create public client for Monad
+          const publicClient = createPublicClient({
+            chain: monadTestnet,
+            transport: http(),
+          });
+
+          // Create MetaMask Smart Account
+          const smart = await toMetaMaskSmartAccount({
+            client: publicClient,
+            implementation: Implementation.Hybrid,
+            deployParams: [account.address, [], [], []],
+            deploySalt: '0x',
+            signer: { account },
+          });
+
+          setSessionPrivateKey(storedKey as `0x${string}`);
+          setSessionAddress(smart.address);
+          setSmartAccount(smart);
+          console.log('✅ MetaMask Smart Account loaded:', smart.address);
+        }
+      } catch (error) {
+        console.error('Error loading session:', error);
+        localStorage.removeItem(SESSION_KEY);
+      } finally {
         setIsLoading(false);
-        return;
       }
+    };
 
-      // Try to load existing session key
-      const storedKey = localStorage.getItem(SESSION_KEY);
-      
-      if (storedKey && storedKey.startsWith('0x')) {
-        // Valid key found - derive the address
-        const account = privateKeyToAccount(storedKey as `0x${string}`);
-        setSessionPrivateKey(storedKey as `0x${string}`);
-        setSessionAddress(account.address);
-        console.log('✅ Session account loaded:', account.address);
-      } else {
-        // No valid key found
-        console.log('ℹ️ No session account found');
-      }
-    } catch (error) {
-      console.error('Error loading session:', error);
-      // Clear corrupted data
-      localStorage.removeItem(SESSION_KEY);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []); // Empty dependency array = run once on mount
+    loadSession();
+  }, []);
 
-  /**
-   * Create a new session account
-   * Generates a random private key and stores it
-   */
-  const createSession = useCallback(() => {
+  // Create new session
+  const createSession = useCallback(async () => {
     try {
       setIsLoading(true);
       
-      // Generate a cryptographically secure random private key
-      // This uses window.crypto under the hood (browser's secure random)
       const privateKey = generatePrivateKey();
-      
-      // Derive the public address from the private key
       const account = privateKeyToAccount(privateKey);
       
-      // Store in localStorage (WARNING: not secure for production!)
-      // For hackathon/testnet this is acceptable
+      // Create public client
+      const publicClient = createPublicClient({
+        chain: monadTestnet,
+        transport: http(),
+      });
+
+      // Create MetaMask Smart Account
+      console.log('Creating MetaMask Smart Account...');
+      const smart = await toMetaMaskSmartAccount({
+        client: publicClient,
+        implementation: Implementation.Hybrid,
+        deployParams: [account.address, [], [], []],
+        deploySalt: '0x',
+        signer: { account },
+      });
+
       localStorage.setItem(SESSION_KEY, privateKey);
-      
-      // Update React state
       setSessionPrivateKey(privateKey);
-      setSessionAddress(account.address);
+      setSessionAddress(smart.address);
+      setSmartAccount(smart);
       
-      console.log('✅ New session account created:', account.address);
-      console.log('⚠️ Session key stored in localStorage (testnet only!)');
+      console.log('✅ MetaMask Smart Account created:', smart.address);
       
     } catch (error) {
       console.error('Error creating session:', error);
     } finally {
       setIsLoading(false);
     }
-  }, []); // No dependencies: function never changes
+  }, []);
 
-  /**
-   * Delete the current session
-   * Removes from localStorage and clears state
-   */
   const revokeSession = useCallback(() => {
-    try {
-      // Remove from storage
-      localStorage.removeItem(SESSION_KEY);
-      
-      // Clear state
-      setSessionPrivateKey(null);
-      setSessionAddress(null);
-      
-      console.log('✅ Session account revoked');
-      
-    } catch (error) {
-      console.error('Error revoking session:', error);
-    }
-  }, []); // No dependencies
+    localStorage.removeItem(SESSION_KEY);
+    setSessionPrivateKey(null);
+    setSessionAddress(null);
+    setSmartAccount(null);
+    console.log('✅ Session revoked');
+  }, []);
 
   return {
     sessionAddress,
     sessionPrivateKey,
+    smartAccount,
     createSession,
     revokeSession,
-    hasSession: !!sessionAddress,
+    hasSession: !!smartAccount,
     isLoading,
   };
 }

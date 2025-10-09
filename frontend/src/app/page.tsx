@@ -9,6 +9,16 @@ import { useSessionAccount } from '@/hooks/useSessionAccount';
 import { erc7715ProviderActions } from '@metamask/delegation-toolkit/experimental';
 import { monadTestnet } from './config/wagmi';
 
+// Type declaration for MetaMask's experimental wallet_grantPermissions
+// declare global {
+//   interface Window {
+//     ethereum?: {
+//       request: (args: { method: string; params?: any[] }) => Promise<any>;
+//       isMetaMask?: boolean;
+//     };
+//   }
+// }
+
 export default function Home() {
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
@@ -39,7 +49,7 @@ export default function Home() {
     }
   }, []);
 
-  const agentAddress = '0xA2EA4B31f0E36f18DBd5C21De4f82083d6d64E2d';
+  const agentAddress = '0x7B6831D2d1d65884cB1AFc051A364d8FEc2c444D';
 
   const agentAbi = [
     {
@@ -186,80 +196,21 @@ export default function Home() {
   * - Off-chain permission (MetaMask) = User's consent
   * - On-chain authorization (Agent contract) = Smart contract's record
   */
- const handleGrantPermission = async () => {
+ const handleAuthorizeSession = async () => {
   if (!walletClient || !address) {
     setStatus('❌ Wallet not connected');
     return;
   }
 
   if (!hasSession || !sessionAddress) {
-    setStatus('❌ Please create a session account first');
+    setStatus('❌ Please create a MetaMask Smart Account session first');
     return;
   }
 
   setIsGrantingPermission(true);
-  setStatus('📝 Requesting permission from MetaMask...');
+  setStatus('🔄 Authorizing MetaMask Smart Account...');
 
   try {
-    // Step 1: Extend wallet client with ERC-7715 actions
-    const extendedClient = createWalletClient({
-      account: address,
-      chain: monadTestnet,
-      transport: custom(window.ethereum), // ✅ Now imports correctly
-    }).extend(erc7715ProviderActions());
-
-    console.log('🔑 Creating permission request...');
-
-    // Step 2: Define permission parameters
-    const currentTime = Math.floor(Date.now() / 1000);
-    const oneWeek = 604800; // 7 days in seconds
-    const expiry = currentTime + oneWeek;
-
-    // Step 3: Request permission from MetaMask
-    // ✅ Type assertion for experimental API
-    const grantedPermissions = await (extendedClient as any).grantPermissions([{
-      chainId: monadTestnet.id,
-      expiry,
-      signer: {
-        type: 'account',
-        data: {
-          address: sessionAddress,
-        },
-      },
-      permissions: [{
-        type: 'native-token-stream',
-        data: {
-          initialAmount: BigInt(0),
-          amountPerSecond: BigInt(1000000000000),
-          maxAmount: BigInt(10 ** 18),
-          startTime: currentTime,
-          justification: 'Automated bridging when gas fees exceed threshold',
-        },
-      }],
-    }]);
-
-    console.log('✅ Permissions granted:', grantedPermissions);
-
-    // Step 4: Extract important data from response
-    const permission = grantedPermissions[0];
-    const context = permission.context as string;
-    const manager = permission.signerMeta?.delegationManager as `0x${string}`;
-
-    if (!context || !manager) {
-      throw new Error('Invalid permission response - missing context or delegation manager');
-    }
-
-    // Step 5: Store permission data for later use
-    setPermissionsContext(context);
-    setDelegationManager(manager);
-    setPermissionsGranted(true);
-
-    console.log('📋 Permission Context:', context.substring(0, 50) + '...');
-    console.log('🏛️ Delegation Manager:', manager);
-
-    // Step 6: Now authorize session on-chain
-    setStatus('🔄 Authorizing session on Agent contract...');
-
     const authHash = await walletClient.writeContract({
       address: agentAddress,
       abi: agentAbi,
@@ -267,21 +218,13 @@ export default function Home() {
       args: [sessionAddress],
     });
 
-    setStatus(`✅ Permission granted! Session authorized. Tx: ${authHash.substring(0, 10)}...`);
-    console.log('✅ On-chain authorization tx:', authHash);
+    setStatus(`✅ Smart Account authorized! Tx: ${authHash.substring(0, 10)}...`);
+    setPermissionsGranted(true);
+    console.log('✅ Authorization tx:', authHash);
 
   } catch (error: unknown) {
-    console.error('❌ Permission error:', error);
-    
-    if (error instanceof Error) {
-      if (error.message.includes('User rejected')) {
-        setStatus('❌ Permission denied by user');
-      } else {
-        setStatus(`❌ Error: ${error.message}`);
-      }
-    } else {
-      setStatus('❌ Unknown error occurred');
-    }
+    console.error('❌ Authorization error:', error);
+    setStatus(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
   } finally {
     setIsGrantingPermission(false);
   }
@@ -371,46 +314,30 @@ export default function Home() {
           </div>
         )}
 
-        {/* Permission Request Section */}
+        {/* MetaMask Smart Account Authorization */}
         {isConnected && hasSession && (
           <div className="p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 mt-4">
-            <h3 className="font-semibold mb-2">🔐 Grant Permission</h3>
+            <h3 className="font-semibold mb-2">🔐 Authorize MetaMask Smart Account</h3>
             
             {permissionsGranted ? (
               <div className="space-y-2">
-                <p className="text-green-600 font-semibold">✅ Permissions granted!</p>
+                <p className="text-green-600 font-semibold">✅ Smart Account authorized!</p>
                 <p className="text-sm text-gray-600">
-                  Your session account can now bridge up to 1 ETH when gas exceeds your threshold.
+                  Your MetaMask Smart Account can now bridge when gas exceeds threshold.
                 </p>
-                <button
-                  onClick={() => {
-                    setPermissionsGranted(false);
-                    setPermissionsContext(null);
-                    setDelegationManager(null);
-                    setStatus('Permissions revoked locally');
-                  }}
-                  className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
-                >
-                  Clear Permission (Local)
-                </button>
               </div>
             ) : (
               <div className="space-y-2">
                 <p className="text-sm text-gray-600 mb-2">
-                  Grant permission for your session account to bridge assets automatically when gas fees spike.
+                  Authorize your MetaMask Smart Account for automated bridging.
                 </p>
                 <button
-                  onClick={handleGrantPermission}
-                  disabled={isGrantingPermission || !hasSession}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded hover:from-purple-600 hover:to-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  onClick={handleAuthorizeSession}
+                  disabled={isGrantingPermission}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded hover:from-purple-600 hover:to-blue-600 disabled:bg-gray-300"
                 >
-                  {isGrantingPermission ? '⏳ Requesting Permission...' : '🔑 Grant Permission'}
+                  {isGrantingPermission ? '⏳ Authorizing...' : '🔑 Authorize Smart Account'}
                 </button>
-                {!hasSession && (
-                  <p className="text-sm text-red-500">
-                    Create a session account first
-                  </p>
-                )}
               </div>
             )}
           </div>
