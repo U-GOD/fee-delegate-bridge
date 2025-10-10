@@ -477,7 +477,7 @@ export default function Home() {
                   <button
                     onClick={() => {
                       window.open(
-                        `https://testnet.monad.xyz/address/${sessionAddress}`,
+                        `https://monad-testnet.socialscan.io/tx/${sessionAddress}`,
                         '_blank'
                       );
                     }}
