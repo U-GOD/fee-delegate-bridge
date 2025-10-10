@@ -391,35 +391,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* MetaMask Smart Account Authorization */}
-        {isConnected && hasSession && (
-          <div className="p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 mt-4">
-            <h3 className="font-semibold mb-2">🔐 Authorize MetaMask Smart Account</h3>
-            
-            {permissionsGranted ? (
-              <div className="space-y-2">
-                <p className="text-green-600 font-semibold">✅ Smart Account authorized!</p>
-                <p className="text-sm text-gray-600">
-                  Your MetaMask Smart Account can now bridge when gas exceeds threshold.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-sm text-gray-600 mb-2">
-                  Authorize your MetaMask Smart Account for automated bridging.
-                </p>
-                <button
-                  onClick={handleAuthorizeSession}
-                  disabled={isGrantingPermission}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded hover:from-purple-600 hover:to-blue-600 disabled:bg-gray-300"
-                >
-                  {isGrantingPermission ? '⏳ Authorizing...' : '🔑 Authorize Smart Account'}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Enhanced Session Status Panel */}
         {isConnected && (
           <div className="p-6 border-2 rounded-xl bg-gradient-to-br from-blue-50 to-purple-50 mt-4 shadow-md">
