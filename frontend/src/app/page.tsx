@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAccount, useWalletClient, useReadContract, useWriteContract } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { createWalletClient, toHex, custom } from 'viem';
+import { createWalletClient, toHex, custom, createPublicClient, http, encodeFunctionData, parseEther } from 'viem';
 import { bundlerConfig, isBundlerConfigured } from './config/bundler';
 import { useSessionAccount } from '@/hooks/useSessionAccount';
 import { erc7715ProviderActions } from '@metamask/delegation-toolkit/experimental';
 import { monadTestnet } from './config/wagmi';
+import { createBundlerClient } from 'viem/account-abstraction';
 
 // Type declaration for MetaMask's experimental wallet_grantPermissions
 // declare global {
@@ -27,6 +28,7 @@ export default function Home() {
 
   const {
     sessionAddress,
+    smartAccount,
     createSession,
     revokeSession,
     hasSession,
@@ -161,26 +163,79 @@ export default function Home() {
     }
   };
 
-  const handleBridgeWithFee = async () => {
-    if (!address || !shouldTrigger) return;
+  // Create bundler client for sending user operations
+  const getBundlerClient = useCallback(() => {
+    if (!smartAccount) return null;
     
+    const publicClient = createPublicClient({
+      chain: monadTestnet,
+      transport: http(),
+    });
+
+    return createBundlerClient({
+      client: publicClient,
+      transport: http(bundlerConfig.url),
+      paymaster: true, // Enable paymaster for gasless txs
+    });
+  }, [smartAccount]);
+
+  const handleBridgeWithFee = async () => {
+    if (!address || !shouldTrigger) {
+      setStatus('❌ Bridge conditions not met');
+      return;
+    }
+
+    if (!smartAccount || !sessionAddress) {
+      setStatus('❌ No Smart Account - create session first');
+      return;
+    }
+
     try {
-      setStatus('Estimating bridge fee...');
-      const estimatedFee = await estimateLayerZeroFee();
+      setStatus('🚀 Preparing bridge via Smart Account...');
       
-      setStatus('Bridging...');
-      
-      // Use the writeContract hook with proper value
-      writeContract({
-        address: agentAddress,
+      const bundlerClient = getBundlerClient();
+      if (!bundlerClient) {
+        throw new Error('Bundler client not available');
+      }
+
+      // Encode the bridge function call
+      const bridgeCallData = encodeFunctionData({
         abi: agentAbi,
         functionName: 'checkGasAndBridge',
         args: [address],
-        value: estimatedFee,
       });
-      
-    } catch (error) {
-      setStatus(`Bridge error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+
+      console.log('📦 Sending user operation via Smart Account...');
+      console.log('Smart Account:', sessionAddress);
+      console.log('Target Contract:', agentAddress);
+
+      // Send user operation via bundler
+      const userOpHash = await bundlerClient.sendUserOperation({
+        account: smartAccount,
+        calls: [{
+          to: agentAddress,
+          value: parseEther('0.01'), // 0.01 MON for LZ fee
+          data: bridgeCallData,
+        }],
+        maxFeePerGas: BigInt(10 ** 9), // 1 gwei
+        maxPriorityFeePerGas: BigInt(10 ** 9), // 1 gwei
+      });
+
+      setStatus(`✅ Bridge initiated! UserOp: ${userOpHash.substring(0, 10)}...`);
+      console.log('✅ User Operation Hash:', userOpHash);
+
+      // Wait for receipt
+      setStatus('⏳ Waiting for confirmation...');
+      const receipt = await bundlerClient.waitForUserOperationReceipt({
+        hash: userOpHash,
+      });
+
+      setStatus(`✅ Bridge complete! Tx: ${receipt.receipt.transactionHash.substring(0, 10)}...`);
+      console.log('✅ Transaction Receipt:', receipt);
+
+    } catch (error: unknown) {
+      console.error('❌ Bridge error:', error);
+      setStatus(`❌ Bridge failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
