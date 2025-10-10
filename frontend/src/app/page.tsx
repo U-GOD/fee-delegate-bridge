@@ -95,6 +95,16 @@ export default function Home() {
       outputs: [],
       stateMutability: 'nonpayable',
     },
+    {
+      name: 'isSessionAuthorized',
+      type: 'function',
+      inputs: [
+        { name: '_user', type: 'address' },
+        { name: '_sessionAccount', type: 'address' }
+      ],
+      outputs: [{ name: '', type: 'bool' }],
+      stateMutability: 'view',
+    },
     // checkGas function for real-time monitoring
     {
       name: 'checkGas',
@@ -264,38 +274,38 @@ export default function Home() {
   * - On-chain authorization (Agent contract) = Smart contract's record
   */
  const handleAuthorizeSession = async () => {
-  if (!walletClient || !address) {
-    setStatus('❌ Wallet not connected');
-    return;
-  }
+    if (!walletClient || !address) {
+      setStatus('❌ Wallet not connected');
+      return;
+    }
 
-  if (!hasSession || !sessionAddress) {
-    setStatus('❌ Please create a MetaMask Smart Account session first');
-    return;
-  }
+    if (!hasSession || !sessionAddress) {
+      setStatus('❌ Please create a MetaMask Smart Account session first');
+      return;
+    }
 
-  setIsGrantingPermission(true);
-  setStatus('🔄 Authorizing MetaMask Smart Account...');
+    setIsGrantingPermission(true);
+    setStatus('🔄 Authorizing MetaMask Smart Account...');
 
-  try {
-    const authHash = await walletClient.writeContract({
-      address: agentAddress,
-      abi: agentAbi,
-      functionName: 'authorizeSession',
-      args: [sessionAddress],
-    });
+    try {
+      const authHash = await walletClient.writeContract({
+        address: agentAddress,
+        abi: agentAbi,
+        functionName: 'authorizeSession',
+        args: [sessionAddress],
+      });
 
-    setStatus(`✅ Smart Account authorized! Tx: ${authHash.substring(0, 10)}...`);
-    setPermissionsGranted(true);
-    console.log('✅ Authorization tx:', authHash);
+      setStatus(`✅ Smart Account authorized! Tx: ${authHash.substring(0, 10)}...`);
+      setPermissionsGranted(true);
+      console.log('✅ Authorization tx:', authHash);
 
-  } catch (error: unknown) {
-    console.error('❌ Authorization error:', error);
-    setStatus(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  } finally {
-    setIsGrantingPermission(false);
-  }
-};
+    } catch (error: unknown) {
+      console.error('❌ Authorization error:', error);
+      setStatus(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsGrantingPermission(false);
+    }
+  };
 
   // Extract gas data for display
   const [currentGas, shouldTrigger] = gasData || [0, false];
@@ -465,7 +475,7 @@ export default function Home() {
                           <span className="text-orange-700 font-semibold">Not Authorized</span>
                         </div>
                         <span className="text-xs text-gray-500 bg-orange-50 px-2 py-1 rounded">
-                          ⚠ Click "Authorize" below
+                          ⚠ Click &quot;Authorize&quot; below
                         </span>
                       </>
                     )}
@@ -498,7 +508,7 @@ export default function Home() {
                   <p className="font-semibold mb-1">ℹ️ What is this?</p>
                   <p>
                     This is a temporary MetaMask Smart Account that can bridge on your behalf
-                    when gas fees exceed your threshold. It's stored locally on this device only.
+                    when gas fees exceed your threshold. It&quot;s stored locally on this device only.
                   </p>
                 </div>
               </div>

@@ -9,7 +9,12 @@ import { http } from 'viem';
 export const monadTestnet = defineChain({
   id: 10143,
   name: 'Monad Testnet',
-  rpcUrls: { default: { http: ['https://testnet-rpc.monad.xyz'] } },
+  rpcUrls: { 
+    default: { 
+      // http: ['https://testnet-rpc.monad.xyz'] Alternative RPC
+      http: ['https://testnet.monad.xyz/rpc']
+    } 
+  },
   nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 },
 });
 
