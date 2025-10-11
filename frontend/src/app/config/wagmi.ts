@@ -23,6 +23,6 @@ export const config = createConfig({
   chains: [monadTestnet],
   connectors: [injected()],
   transports: { [monadTestnet.id]: http() },
-  autoConnect: false,
+  // autoConnect: false,
   ssr: true,
 });

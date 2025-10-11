@@ -12,10 +12,13 @@ import { toMetaMaskSmartAccount, Implementation } from '@metamask/delegation-too
 
 const SESSION_KEY = 'fee_delegate_session_key';
 
+// Define the type using Awaited and ReturnType
+type SmartAccountType = Awaited<ReturnType<typeof toMetaMaskSmartAccount>>;
+
 interface UseSessionAccountReturn {
   sessionAddress: Address | null;
   sessionPrivateKey: `0x${string}` | null;
-  smartAccount: any | null; // MetaMask Smart Account
+  smartAccount: SmartAccountType | null;
   createSession: () => Promise<void>;
   revokeSession: () => void;
   hasSession: boolean;
@@ -25,7 +28,7 @@ interface UseSessionAccountReturn {
 export function useSessionAccount(): UseSessionAccountReturn {
   const [sessionPrivateKey, setSessionPrivateKey] = useState<`0x${string}` | null>(null);
   const [sessionAddress, setSessionAddress] = useState<Address | null>(null);
-  const [smartAccount, setSmartAccount] = useState<any | null>(null);
+  const [smartAccount, setSmartAccount] = useState<SmartAccountType | null>(null); 
   const [isLoading, setIsLoading] = useState(true);
 
   // Load existing session
