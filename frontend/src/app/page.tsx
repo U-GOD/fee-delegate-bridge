@@ -364,16 +364,32 @@ export default function Home() {
       });
 
       setStatus(`✅ Deposited ${depositAmount} MON! Tx: ${hash.substring(0, 10)}...`);
+      console.log('✅ Deposit tx:', hash);
       setDepositAmount(''); // Clear input
       
-      // Refresh deposit balance after 2 seconds
-      setTimeout(() => refetchDeposit(), 2000);
+      // Force immediate refresh
+      refetchDeposit();
+      
+      // Also refresh after 2 seconds to ensure confirmation
+      setTimeout(() => {
+        refetchDeposit();
+        console.log('🔄 Deposit balance refreshed');
+      }, 2000);
 
     } catch (error: unknown) {
       console.error('❌ Deposit error:', error);
       setStatus(`❌ Deposit failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
+
+  // Debug: Log deposit balance
+  useEffect(() => {
+    console.log('💰 Deposit Balance Debug:', {
+      raw: depositBalance,
+      formatted: depositBalance ? (Number(depositBalance) / 1e18).toFixed(4) : '0',
+      isGreaterThanZero: depositBalance ? Number(depositBalance) > 0 : false
+    });
+  }, [depositBalance]);
 
   // Handle withdraw
   const handleWithdraw = async () => {
@@ -397,10 +413,17 @@ export default function Home() {
         args: [depositBalance], // Withdraw full balance
       });
 
-      setStatus(`✅ Withdrew all funds! Tx: ${hash.substring(0, 10)}...`);
+      setStatus(`✅ Withdrew ${(Number(depositBalance) / 1e18).toFixed(4)} MON! Tx: ${hash.substring(0, 10)}...`);
+      console.log('✅ Withdraw tx:', hash);
       
-      // Refresh deposit balance after 2 seconds
-      setTimeout(() => refetchDeposit(), 2000);
+      // Force immediate refresh
+      refetchDeposit();
+      
+      // Also refresh after 2 seconds
+      setTimeout(() => {
+        refetchDeposit();
+        console.log('🔄 Deposit balance refreshed');
+      }, 2000);
 
     } catch (error: unknown) {
       console.error('❌ Withdraw error:', error);
@@ -466,15 +489,18 @@ export default function Home() {
                 <div className="p-3 bg-white rounded-lg border border-gray-200 mb-3">
                   <p className="text-sm text-gray-500 mb-1">Your Deposit Balance</p>
                   <p className="text-2xl font-bold text-green-600">
-                    {depositBalance ? `${(Number(depositBalance) / 1e18).toFixed(4)} MON` : '0.0000 MON'}
+                    {depositBalance !== undefined 
+                      ? `${(Number(depositBalance) / 1e18).toFixed(4)} MON` 
+                      : 'Loading...'}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
-                    Available for automated bridging
+                    Available for automated bridging (Each bridge uses 0.1 MON)
                   </p>
                 </div>
 
-                {/* Deposit Input and Button */}
-                <div className="space-y-2">
+                {/* Deposit Input and Buttons */}
+                <div className="space-y-3">
+                  {/* Deposit Input Row */}
                   <div className="flex gap-2">
                     <input
                       type="number"
@@ -487,8 +513,8 @@ export default function Home() {
                     />
                     <button
                       onClick={handleDeposit}
-                      disabled={!depositAmount}
-                      className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold"
+                      disabled={!depositAmount || parseFloat(depositAmount) <= 0}
+                      className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold whitespace-nowrap"
                     >
                       💳 Deposit
                     </button>
@@ -498,38 +524,44 @@ export default function Home() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setDepositAmount('0.1')}
-                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm"
+                      className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm font-medium"
                     >
                       0.1 MON
                     </button>
                     <button
                       onClick={() => setDepositAmount('0.5')}
-                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm"
+                      className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm font-medium"
                     >
                       0.5 MON
                     </button>
                     <button
                       onClick={() => setDepositAmount('1')}
-                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm"
+                      className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm font-medium"
                     >
-                      1 MON
+                      1.0 MON
                     </button>
                   </div>
 
-                  {/* Withdraw Button */}
-                  {depositBalance && depositBalance > BigInt(0) && (
-                    <button
-                      onClick={handleWithdraw}
-                      className="w-full px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-semibold mt-2"
-                    >
-                      💸 Withdraw All ({(Number(depositBalance) / 1e18).toFixed(4)} MON)
-                    </button>
-                  )}
-
-                  {/* Info Text */}
-                  <p className="text-xs text-gray-500 mt-2">
-                    ℹ️ Deposit funds to enable automated bridging. Each bridge uses 0.1 MON.
-                  </p>
+                  {/* Withdraw Section - ALWAYS SHOW if balance > 0 */}
+                  <div className="pt-2 border-t border-gray-300">
+                    {depositBalance !== undefined && Number(depositBalance) > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600 font-medium">
+                          💸 You have {(Number(depositBalance) / 1e18).toFixed(4)} MON deposited
+                        </p>
+                        <button
+                          onClick={handleWithdraw}
+                          className="w-full px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 font-semibold"
+                        >
+                          💸 Withdraw All Funds
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 italic">
+                        No funds deposited yet. Deposit to enable automated bridging.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
