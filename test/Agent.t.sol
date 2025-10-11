@@ -371,7 +371,7 @@ contract AgentTest is Test {
         vm.prank(user1);
         agent.authorizeSession(session1);
         
-        // NEW: User deposits funds for bridging
+        // User deposits funds for bridging
         vm.deal(user1, 1 ether); // Give user1 some ETH
         vm.prank(user1);
         agent.deposit{value: 0.5 ether}(); // Deposit 0.5 ETH
@@ -392,7 +392,7 @@ contract AgentTest is Test {
         vm.prank(session1);
         agent.checkGasAndBridge{value: 0.01 ether}(user1);
         
-        // NEW: Verify deposit was deducted
+        //Verify deposit was deducted
         assertEq(agent.getDeposit(user1), 0.4 ether, "Deposit should be reduced by 0.1 ETH");
     }
 
