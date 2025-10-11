@@ -9,6 +9,7 @@ import { useSessionAccount } from '@/hooks/useSessionAccount';
 import { erc7715ProviderActions } from '@metamask/delegation-toolkit/experimental';
 import { monadTestnet } from './config/wagmi';
 import { createBundlerClient } from 'viem/account-abstraction';
+import Header from '@/components/Header';
 
 // Type declaration for MetaMask's experimental wallet_grantPermissions
 // declare global {
@@ -312,18 +313,15 @@ export default function Home() {
 
   return (
     <>
-      {/* Header section (new file)
-      <Header /> */}
+      {/* Header Component */}
+      <Header />
 
-      {/* Main content section (your existing code) */}
-      <main className="p-8">
-        <h1 className="text-2xl font-bold mb-4">FeeDelegate Bridge</h1>
-        
-        <ConnectButton />
+      {/* Main Content */}
+      <main className="container mx-auto max-w-7xl px-4 py-8">
 
         {isConnected && (
           <div className="space-y-4">
-            {/* Gas Status Display - UPDATED */}
+            {/* Gas Status Display */}
             <div className="p-4 border rounded-lg bg-gray-50">
               <h3 className="font-semibold mb-2">Live Gas Monitor</h3>
               {gasLoading ? (
