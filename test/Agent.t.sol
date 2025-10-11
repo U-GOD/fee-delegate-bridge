@@ -371,21 +371,29 @@ contract AgentTest is Test {
         vm.prank(user1);
         agent.authorizeSession(session1);
         
-        // Fund the SESSION account
+        // NEW: User deposits funds for bridging
+        vm.deal(user1, 1 ether); // Give user1 some ETH
+        vm.prank(user1);
+        agent.deposit{value: 0.5 ether}(); // Deposit 0.5 ETH
+        
+        // Fund the SESSION account (for LZ fees)
         vm.deal(session1, 1 ether);
         
         // Expect events in the ORDER they will be emitted
         // MockLzSend comes FIRST (from the endpoint call)
         vm.expectEmit(true, false, false, true);
-        emit MockEndpoint.MockLzSend(40204, abi.encode(user1, 1 ether, block.timestamp, "BRIDGE_TO_MONAD"), "");
+        emit MockEndpoint.MockLzSend(40204, abi.encode(user1, 0.1 ether, block.timestamp, "BRIDGE_TO_MONAD"), "");
         
         // BridgeInitiated comes SECOND (from the agent contract)
         vm.expectEmit(true, true, false, true);
-        emit Agent.BridgeInitiated(user1, 40204, 1 ether, 0.01 ether);
+        emit Agent.BridgeInitiated(user1, 40204, 0.1 ether, 0.01 ether); // Changed to 0.1 ETH
         
         // Bridge as authorized session
         vm.prank(session1);
         agent.checkGasAndBridge{value: 0.01 ether}(user1);
+        
+        // NEW: Verify deposit was deducted
+        assertEq(agent.getDeposit(user1), 0.4 ether, "Deposit should be reduced by 0.1 ETH");
     }
 
     function testCheckGasAndBridge_RevertsAfterRevocation() public {
@@ -460,7 +468,190 @@ contract AgentTest is Test {
         
         // Try to bridge with too little value (mock requires 0.01 ETH)
         vm.prank(session1);
-        vm.expectRevert("Insufficient fee");
+        vm.expectRevert("Insufficient deposit for bridge");
         agent.checkGasAndBridge{value: 0.005 ether}(user1); // Only half
     }
+
+    // ============ DEPOSIT SYSTEM TESTS ============
+
+function testDeposit_Success() public {
+    // Give user1 some ETH to deposit
+    vm.deal(user1, 1 ether);
+    
+    // User deposits 0.5 ETH
+    vm.prank(user1);
+    agent.deposit{value: 0.5 ether}();
+    
+    // Check deposit was recorded
+    assertEq(agent.getDeposit(user1), 0.5 ether, "Deposit should be 0.5 ETH");
+}
+
+function testDeposit_EmitsEvent() public {
+    vm.deal(user1, 1 ether);
+    
+    vm.prank(user1);
+    vm.expectEmit(true, false, false, true);
+    emit Agent.Deposited(user1, 0.3 ether, 0.3 ether);
+    
+    agent.deposit{value: 0.3 ether}();
+}
+
+function testDeposit_MultipleDeposits() public {
+    vm.deal(user1, 2 ether);
+    
+    // First deposit
+    vm.prank(user1);
+    agent.deposit{value: 0.5 ether}();
+    assertEq(agent.getDeposit(user1), 0.5 ether);
+    
+    // Second deposit (should accumulate)
+    vm.prank(user1);
+    agent.deposit{value: 0.3 ether}();
+    assertEq(agent.getDeposit(user1), 0.8 ether, "Should accumulate to 0.8 ETH");
+}
+
+function testDeposit_RevertsOnZero() public {
+    vm.prank(user1);
+    vm.expectRevert("Must deposit at least some ETH");
+    agent.deposit{value: 0}();
+}
+
+function testWithdraw_Success() public {
+    // Setup: User deposits first
+    vm.deal(user1, 1 ether);
+    vm.prank(user1);
+    agent.deposit{value: 0.5 ether}();
+    
+    // Withdraw 0.3 ETH
+    uint256 balanceBefore = user1.balance;
+    
+    vm.prank(user1);
+    agent.withdraw(0.3 ether);
+    
+    // Check deposit was reduced
+    assertEq(agent.getDeposit(user1), 0.2 ether, "Deposit should be 0.2 ETH");
+    
+    // Check user received the ETH
+    assertEq(user1.balance, balanceBefore + 0.3 ether, "User should receive 0.3 ETH");
+}
+
+function testWithdraw_EmitsEvent() public {
+    vm.deal(user1, 1 ether);
+    vm.prank(user1);
+    agent.deposit{value: 0.5 ether}();
+    
+    vm.prank(user1);
+    vm.expectEmit(true, false, false, true);
+    emit Agent.Withdrawn(user1, 0.2 ether, 0.3 ether); // Withdrawn 0.2, balance now 0.3
+    
+    agent.withdraw(0.2 ether);
+}
+
+function testWithdraw_RevertsOnZero() public {
+    vm.prank(user1);
+    vm.expectRevert("Must withdraw something");
+    agent.withdraw(0);
+}
+
+function testWithdraw_RevertsInsufficientBalance() public {
+    // User tries to withdraw without depositing
+    vm.prank(user1);
+    vm.expectRevert("Insufficient deposit balance");
+    agent.withdraw(1 ether);
+}
+
+function testWithdraw_RevertsOverdraw() public {
+    // User deposits 0.5 ETH but tries to withdraw 1 ETH
+    vm.deal(user1, 1 ether);
+    vm.prank(user1);
+    agent.deposit{value: 0.5 ether}();
+    
+    vm.prank(user1);
+    vm.expectRevert("Insufficient deposit balance");
+    agent.withdraw(1 ether);
+}
+
+function testCheckGasAndBridge_RevertsInsufficientDeposit() public {
+    // Setup authorized session but NO deposit
+    vm.prank(user1);
+    agent.setGasThreshold(40);
+    
+    vm.prank(user1);
+    agent.authorizeSession(session1);
+    
+    vm.deal(session1, 1 ether);
+    
+    // Should revert because user hasn't deposited
+    vm.prank(session1);
+    vm.expectRevert("Insufficient deposit for bridge");
+    agent.checkGasAndBridge{value: 0.01 ether}(user1);
+}
+
+function testCheckGasAndBridge_DeductsDeposit() public {
+    // Setup with deposit
+    vm.prank(user1);
+    agent.setGasThreshold(40);
+    
+    vm.prank(user1);
+    agent.authorizeSession(session1);
+    
+    vm.deal(user1, 1 ether);
+    vm.prank(user1);
+    agent.deposit{value: 1 ether}();
+    
+    vm.deal(session1, 1 ether);
+    
+    // Bridge 0.1 ETH
+    vm.prank(session1);
+    agent.checkGasAndBridge{value: 0.01 ether}(user1);
+    
+    // Verify deposit reduced by 0.1 ETH
+    assertEq(agent.getDeposit(user1), 0.9 ether, "Deposit should be 0.9 ETH after bridge");
+}
+
+function testCheckGasAndBridge_MultipleBridges() public {
+    // Setup
+    vm.prank(user1);
+    agent.setGasThreshold(40);
+    
+    vm.prank(user1);
+    agent.authorizeSession(session1);
+    
+    // Deposit 0.5 ETH
+    vm.deal(user1, 1 ether);
+    vm.prank(user1);
+    agent.deposit{value: 0.5 ether}();
+    
+    vm.deal(session1, 1 ether);
+    
+    // First bridge: 0.5 -> 0.4 ETH
+    vm.prank(session1);
+    agent.checkGasAndBridge{value: 0.01 ether}(user1);
+    assertEq(agent.getDeposit(user1), 0.4 ether);
+    
+    // Second bridge: 0.4 -> 0.3 ETH
+    vm.prank(session1);
+    agent.checkGasAndBridge{value: 0.01 ether}(user1);
+    assertEq(agent.getDeposit(user1), 0.3 ether);
+    
+    // Third bridge: 0.3 -> 0.2 ETH
+    vm.prank(session1);
+    agent.checkGasAndBridge{value: 0.01 ether}(user1);
+    assertEq(agent.getDeposit(user1), 0.2 ether);
+    
+    // Fourth bridge: 0.2 -> 0.1 ETH
+    vm.prank(session1);
+    agent.checkGasAndBridge{value: 0.01 ether}(user1);
+    assertEq(agent.getDeposit(user1), 0.1 ether);
+    
+    // Fifth bridge: 0.1 -> 0 ETH
+    vm.prank(session1);
+    agent.checkGasAndBridge{value: 0.01 ether}(user1);
+    assertEq(agent.getDeposit(user1), 0, "Should be fully depleted");
+}
+
+function testGetDeposit_DefaultsToZero() public view {
+    // User who never deposited should have 0 balance
+    assertEq(agent.getDeposit(address(0x999)), 0);
+}
 }

@@ -239,7 +239,7 @@ contract Agent {
 
         // Step #: Check user has enough deposited funds to bridge
         uint256 amountToBridge = 0.1 ether;
-        require(deposits[_user] >= amountToBridge, "Insufficient deposite for bridge");
+        require(deposits[_user] >= amountToBridge, "Insufficient deposit for bridge");
         
         // Step 4: Get LayerZero fee quote
         uint32 dstEid = 40204;
