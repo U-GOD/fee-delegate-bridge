@@ -236,27 +236,33 @@ contract Agent {
             authorizedSessions[_user][msg.sender],
             "Caller not authorized session"
         );
-
-        // Step #: Check user has enough deposited funds to bridge
-        uint256 amountToBridge = 0.1 ether;
+        
+        // Step 3: Check user has enough deposited funds to bridge
+        uint256 amountToBridge = 0.1 ether; 
         require(deposits[_user] >= amountToBridge, "Insufficient deposit for bridge");
         
         // Step 4: Get LayerZero fee quote
-        uint32 dstEid = 40204;
-        bytes memory message = abi.encode(_user, 1 ether, block.timestamp, "BRIDGE_TO_MONAD");
+        uint32 dstEid = 40204; // Monad testnet destination
+        bytes memory message = abi.encode(
+            _user,
+            amountToBridge,
+            block.timestamp,
+            "BRIDGE_TO_MONAD"
+        );
         bytes memory options = "";
         
         (uint256 nativeFee, ) = ENDPOINT.quote(dstEid, message, false, options);
-        require(msg.value >= nativeFee, "Insufficient fee");
+        require(msg.value >= nativeFee, "Insufficient LZ fee");
         
-        // Step 5: Deduct from user's deposit
+        // Step 5: Deduct from user's deposit (the amount being bridged)
         deposits[_user] -= amountToBridge;
-
+        
         // Step 6: Execute bridge via LayerZero
         ENDPOINT.lzSend{value: nativeFee}(dstEid, message, options);
-        emit BridgeInitiated(_user, dstEid, 1 ether, nativeFee);
         
-        // Step 7: refund any extra LZ fee sent
+        emit BridgeInitiated(_user, dstEid, amountToBridge, nativeFee);
+        
+        // Step 7: Refund any extra LZ fee sent
         uint256 extra = msg.value - nativeFee;
         if (extra > 0) {
             payable(msg.sender).transfer(extra);
