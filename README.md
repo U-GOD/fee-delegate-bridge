@@ -19,7 +19,7 @@ This is a monorepo with:
 
 ## Deployments
 
-Monad testnet Agent: 0x7B6831D2d1d65884cB1AFc051A364d8FEc2c444D (tx: 0x9dbdee84d120b8d45d828d92320b5fb1dde1c4bd1e617b57025c4106b74106b77ab4d5)
+Monad testnet Agent: 0x4Ba57f31431CFAe7C6e67eD91116CDAFCD3883Af (tx: 0x4612b30c99abc22d9d905ccf897afa8a3c379283d6cc643b19ceae96fd9f67c5)
 
 ## Prerequisites
 
