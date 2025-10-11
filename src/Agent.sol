@@ -29,13 +29,18 @@ contract Agent {
     // Allows users to authorize multiple ephemeral accounts for delegated actions
     mapping(address => mapping(address => bool)) public authorizedSessions;
 
-    // Track when sessions were authorized (for frontend display/debugging)
     mapping(address => mapping(address => uint256)) public sessionAuthorizedAt;
 
-    // Struct for caveat rules (limits on actions like max amount to bridge)
+    // ============ DEPOSIT SYSTEM ============
+
+    mapping(address => uint256) public deposits;
+
+    event Deposited(address indexed user, uint256 amount, uint256 newBalance);
+    event Withdrawn(address indexed user, uint256 amount, uint256 newBalance);
+
     struct Caveat {
-        address enforcer; // Contract enforcing the caveat
-        bytes data; // Encoded rule data (e.g., ABI-encoded threshold)
+        address enforcer; 
+        bytes data; 
     }
 
     // ERC-7710 Delegation struct to store signed permissions per user
@@ -124,6 +129,28 @@ contract Agent {
         emit ThresholdSet(msg.sender, _threshold);
     }
 
+    // ============ DEPOSIT MANAGEMENT ============
+
+    function deposit() external payable {
+        require(msg.value > 0, "Must deposit at least some ETH");
+
+        deposits[msg.sender] += msg.value;
+        emit Deposited(msg.sender, msg.value, deposits[msg.sender]);
+    }
+
+    function withdraw(uint256 _amount) external {
+        require(_amount > 0, "Must withdraw something");
+        require(deposits[msg.sender] >= _amount, "Insufficient deposit balance");
+
+        deposits[msg.sender] -= _amount;
+        payable(msg.sender).transfer(_amount);
+        emit Withdrawn(msg.sender, _amount, deposits[msg.sender]);
+    }
+
+    function getDeposit(address _user) external view returns (uint256) {
+        return deposits[_user];
+    }
+
     function getGasThreshold(address _user) external view returns (uint256) {
         return gasThresholds[_user];
     }
@@ -200,14 +227,21 @@ contract Agent {
     }
 
     function checkGasAndBridge(address _user) external payable { 
+        // Step 1: Check gas trigger
         (, bool shouldTrigger) = this.checkGas(_user);
         require(shouldTrigger, "No trigger: gas below threshold");
         
+        // Step 2: Check authorization
         require(
             authorizedSessions[_user][msg.sender],
             "Caller not authorized session"
         );
+
+        // Step #: Check user has enough deposited funds to bridge
+        uint256 amountToBridge = 0.1 ether;
+        require(deposits[_user] >= amountToBridge, "Insufficient deposite for bridge");
         
+        // Step 4: Get LayerZero fee quote
         uint32 dstEid = 40204;
         bytes memory message = abi.encode(_user, 1 ether, block.timestamp, "BRIDGE_TO_MONAD");
         bytes memory options = "";
@@ -215,9 +249,14 @@ contract Agent {
         (uint256 nativeFee, ) = ENDPOINT.quote(dstEid, message, false, options);
         require(msg.value >= nativeFee, "Insufficient fee");
         
+        // Step 5: Deduct from user's deposit
+        deposits[_user] -= amountToBridge;
+
+        // Step 6: Execute bridge via LayerZero
         ENDPOINT.lzSend{value: nativeFee}(dstEid, message, options);
         emit BridgeInitiated(_user, dstEid, 1 ether, nativeFee);
         
+        // Step 7: refund any extra LZ fee sent
         uint256 extra = msg.value - nativeFee;
         if (extra > 0) {
             payable(msg.sender).transfer(extra);
