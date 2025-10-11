@@ -26,6 +26,7 @@ export default function Home() {
   const { data: walletClient } = useWalletClient();
   const [threshold, setThreshold] = useState('');
   const [status, setStatus] = useState('');
+  const [depositAmount, setDepositAmount] = useState('');
 
   const {
     sessionAddress,
@@ -52,7 +53,7 @@ export default function Home() {
     }
   }, []);
 
-  const agentAddress = '0x7B6831D2d1d65884cB1AFc051A364d8FEc2c444D';
+  const agentAddress = '0x4Ba57f31431CFAe7C6e67eD91116CDAFCD3883Af';
 
   const agentAbi = [
     {
@@ -61,6 +62,27 @@ export default function Home() {
       inputs: [{ name: '_threshold', type: 'uint256' }],
       outputs: [],
       stateMutability: 'nonpayable',
+    },
+    {
+      name: 'deposit',
+      type: 'function',
+      inputs: [],
+      outputs: [],
+      stateMutability: 'payable',
+    },
+    {
+      name: 'withdraw',
+      type: 'function',
+      inputs: [{ name: '_amount', type: 'uint256' }],
+      outputs: [],
+      stateMutability: 'nonpayable',
+    },
+    {
+      name: 'getDeposit',
+      type: 'function',
+      inputs: [{ name: '_user', type: 'address' }],
+      outputs: [{ name: '', type: 'uint256' }],
+      stateMutability: 'view',
     },
     {
       name: 'redeemDelegationSimple',
@@ -202,6 +224,17 @@ export default function Home() {
     },
   });
 
+  const { data: depositBalance, refetch: refetchDeposit } = useReadContract({
+    address: agentAddress,
+    abi: agentAbi,
+    functionName: 'getDeposit',
+    args: [address as `0x${string}`],
+    query: {
+      enabled: !!address,
+      refetchInterval: 10000, // Refresh every 10 seconds
+    },
+  });
+
   const handleBridgeWithFee = async () => {
     if (!address || !shouldTrigger) {
       setStatus('❌ Bridge conditions not met');
@@ -308,6 +341,73 @@ export default function Home() {
     }
   };
 
+  // Handle deposit
+  const handleDeposit = async () => {
+    if (!walletClient || !address) {
+      setStatus('❌ Wallet not connected');
+      return;
+    }
+
+    if (!depositAmount || parseFloat(depositAmount) <= 0) {
+      setStatus('❌ Enter a valid deposit amount');
+      return;
+    }
+
+    try {
+      setStatus('💰 Depositing funds...');
+
+      const hash = await walletClient.writeContract({
+        address: agentAddress,
+        abi: agentAbi,
+        functionName: 'deposit',
+        value: parseEther(depositAmount),
+      });
+
+      setStatus(`✅ Deposited ${depositAmount} MON! Tx: ${hash.substring(0, 10)}...`);
+      setDepositAmount(''); // Clear input
+      
+      // Refresh deposit balance after 2 seconds
+      setTimeout(() => refetchDeposit(), 2000);
+
+    } catch (error: unknown) {
+      console.error('❌ Deposit error:', error);
+      setStatus(`❌ Deposit failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  // Handle withdraw
+  const handleWithdraw = async () => {
+    if (!walletClient || !address) {
+      setStatus('❌ Wallet not connected');
+      return;
+    }
+
+    if (!depositBalance || depositBalance === BigInt(0)) {
+      setStatus('❌ No funds to withdraw');
+      return;
+    }
+
+    try {
+      setStatus('💸 Withdrawing funds...');
+
+      const hash = await walletClient.writeContract({
+        address: agentAddress,
+        abi: agentAbi,
+        functionName: 'withdraw',
+        args: [depositBalance], // Withdraw full balance
+      });
+
+      setStatus(`✅ Withdrew all funds! Tx: ${hash.substring(0, 10)}...`);
+      
+      // Refresh deposit balance after 2 seconds
+      setTimeout(() => refetchDeposit(), 2000);
+
+    } catch (error: unknown) {
+      console.error('❌ Withdraw error:', error);
+      setStatus(`❌ Withdraw failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   // Extract gas data for display
   const [currentGas, shouldTrigger] = gasData || [0, false];
 
@@ -354,6 +454,85 @@ export default function Home() {
                 <p>Connect wallet to see gas data</p>
               )}
             </div>
+
+            {/* Deposit Management Section */}
+            {isConnected && (
+              <div className="p-4 border-2 rounded-lg bg-gradient-to-r from-green-50 to-blue-50 mt-4">
+                <h3 className="font-semibold mb-3 text-lg flex items-center gap-2">
+                  💰 Deposit Management
+                </h3>
+
+                {/* Display Current Balance */}
+                <div className="p-3 bg-white rounded-lg border border-gray-200 mb-3">
+                  <p className="text-sm text-gray-500 mb-1">Your Deposit Balance</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {depositBalance ? `${(Number(depositBalance) / 1e18).toFixed(4)} MON` : '0.0000 MON'}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Available for automated bridging
+                  </p>
+                </div>
+
+                {/* Deposit Input and Button */}
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      placeholder="Amount to deposit (MON)"
+                      value={depositAmount}
+                      onChange={(e) => setDepositAmount(e.target.value)}
+                      className="flex-1 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                      step="0.01"
+                      min="0"
+                    />
+                    <button
+                      onClick={handleDeposit}
+                      disabled={!depositAmount}
+                      className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold"
+                    >
+                      💳 Deposit
+                    </button>
+                  </div>
+
+                  {/* Quick Deposit Buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setDepositAmount('0.1')}
+                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm"
+                    >
+                      0.1 MON
+                    </button>
+                    <button
+                      onClick={() => setDepositAmount('0.5')}
+                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm"
+                    >
+                      0.5 MON
+                    </button>
+                    <button
+                      onClick={() => setDepositAmount('1')}
+                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm"
+                    >
+                      1 MON
+                    </button>
+                  </div>
+
+                  {/* Withdraw Button */}
+                  {depositBalance && depositBalance > BigInt(0) && (
+                    <button
+                      onClick={handleWithdraw}
+                      className="w-full px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-semibold mt-2"
+                    >
+                      💸 Withdraw All ({(Number(depositBalance) / 1e18).toFixed(4)} MON)
+                    </button>
+                  )}
+
+                  {/* Info Text */}
+                  <p className="text-xs text-gray-500 mt-2">
+                    ℹ️ Deposit funds to enable automated bridging. Each bridge uses 0.1 MON.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Threshold Controls */}
             <div className="flex items-center space-x-2">
