@@ -442,191 +442,205 @@ export default function Home() {
       <Header />
 
       {/* Main Content */}
-      <main className="container mx-auto max-w-7xl px-4 py-8">
+      <main className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-12">
+        <div className="container mx-auto max-w-6xl px-4">
 
-        {isConnected && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Gas Monitor - Left Side */}
-            <GasMonitor
-              isLoading={gasLoading}
-              error={gasError}
-              currentGas={Number(currentGas)}
-              threshold={threshold}
-              shouldTrigger={shouldTrigger}
-            />
-
-            {/* Action Panel - Right Side */}
-            <ActionPanel
-              threshold={threshold}
-              setThreshold={setThreshold}
-              onSetThreshold={handleSetThreshold}
-              onDelegate={handleAuthorizeSession}
-              onBridge={handleBridgeWithFee}
-              shouldTrigger={shouldTrigger}
-              isPending={isPending}
-              depositAmount={depositAmount}
-              setDepositAmount={setDepositAmount}
-              onDeposit={handleDeposit}
-              depositBalance={depositBalance}
-              onWithdraw={handleWithdraw}
-            />
-          </div>
-        )}
-
-        {/* Enhanced Session Status Panel */}
-        {isConnected && (
-          <div className="p-6 border-2 rounded-xl bg-gradient-to-br from-blue-50 to-purple-50 mt-4 shadow-md">
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <span>🔐</span> MetaMask Smart Account Status
-            </h3>
-            
-            {sessionLoading ? (
-              <div className="flex items-center gap-2">
-                <div className="animate-spin h-5 w-5 border-2 border-blue-500 rounded-full border-t-transparent"></div>
-                <p className="text-gray-600">Loading session...</p>
+          {isConnected && (
+            <>
+              {/* Hero Section */}
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                  Your gas threshold monitor
+                </h2>
+                <p className="text-gray-600">
+                  Automate cross-chain bridging based on gas prices
+                </p>
               </div>
-            ) : hasSession ? (
-              <div className="space-y-4">
-                {/* Session Address Display */}
-                <div className="p-4 bg-white rounded-lg border border-gray-200">
-                  <p className="text-sm text-gray-500 mb-1">Session Smart Account</p>
-                  <div className="flex items-center gap-2">
-                    <code className="text-sm font-mono bg-gray-100 px-3 py-2 rounded flex-1">
-                      {sessionAddress}
-                    </code>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                {/* Gas Monitor - Left Side */}
+                <GasMonitor
+                  isLoading={gasLoading}
+                  error={gasError}
+                  currentGas={Number(currentGas)}
+                  threshold={threshold}
+                  shouldTrigger={shouldTrigger}
+                />
+
+                {/* Action Panel - Right Side */}
+                <ActionPanel
+                  threshold={threshold}
+                  setThreshold={setThreshold}
+                  onSetThreshold={handleSetThreshold}
+                  onDelegate={handleAuthorizeSession}
+                  onBridge={handleBridgeWithFee}
+                  shouldTrigger={shouldTrigger}
+                  isPending={isPending}
+                  depositAmount={depositAmount}
+                  setDepositAmount={setDepositAmount}
+                  onDeposit={handleDeposit}
+                  depositBalance={depositBalance}
+                  onWithdraw={handleWithdraw}
+                />
+              </div>
+            </>
+          )}
+
+          {/* Enhanced Session Status Panel */}
+          {isConnected && (
+            <div className="p-6 border-2 rounded-xl bg-gradient-to-br from-blue-50 to-purple-50 mt-4 shadow-md">
+              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <span>🔐</span> MetaMask Smart Account Status
+              </h3>
+              
+              {sessionLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin h-5 w-5 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+                  <p className="text-gray-600">Loading session...</p>
+                </div>
+              ) : hasSession ? (
+                <div className="space-y-4">
+                  {/* Session Address Display */}
+                  <div className="p-4 bg-white rounded-lg border border-gray-200">
+                    <p className="text-sm text-gray-500 mb-1">Session Smart Account</p>
+                    <div className="flex items-center gap-2">
+                      <code className="text-sm font-mono bg-gray-100 px-3 py-2 rounded flex-1">
+                        {sessionAddress}
+                      </code>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(sessionAddress || '');
+                          setStatus('📋 Address copied!');
+                        }}
+                        className="px-3 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                        title="Copy address"
+                      >
+                        📋
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Authorization Status */}
+                  <div className="p-4 bg-white rounded-lg border border-gray-200">
+                    <p className="text-sm text-gray-500 mb-2">Authorization Status</p>
+                    <div className="flex items-center gap-3">
+                      {isAuthorized ? (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-green-700 font-semibold">Authorized & Active</span>
+                          </div>
+                          <span className="text-xs text-gray-500 bg-green-50 px-2 py-1 rounded">
+                            ✓ Can bridge automatically
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                            <span className="text-orange-700 font-semibold">Not Authorized</span>
+                          </div>
+                          <span className="text-xs text-gray-500 bg-orange-50 px-2 py-1 rounded">
+                            ⚠ Click &quot;Authorize&quot; below
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="flex gap-2">
                     <button
                       onClick={() => {
-                        navigator.clipboard.writeText(sessionAddress || '');
-                        setStatus('📋 Address copied!');
+                        window.open(
+                          `https://monad-testnet.socialscan.io/tx/${sessionAddress}`,
+                          '_blank'
+                        );
                       }}
-                      className="px-3 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
-                      title="Copy address"
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm flex items-center gap-2"
                     >
-                      📋
+                      🔍 View on Explorer
+                    </button>
+                    <button
+                      onClick={revokeSession}
+                      className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm flex items-center gap-2"
+                    >
+                      🗑️ Revoke Session
                     </button>
                   </div>
-                </div>
 
-                {/* Authorization Status */}
-                <div className="p-4 bg-white rounded-lg border border-gray-200">
-                  <p className="text-sm text-gray-500 mb-2">Authorization Status</p>
-                  <div className="flex items-center gap-3">
-                    {isAuthorized ? (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                          <span className="text-green-700 font-semibold">Authorized & Active</span>
-                        </div>
-                        <span className="text-xs text-gray-500 bg-green-50 px-2 py-1 rounded">
-                          ✓ Can bridge automatically
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                          <span className="text-orange-700 font-semibold">Not Authorized</span>
-                        </div>
-                        <span className="text-xs text-gray-500 bg-orange-50 px-2 py-1 rounded">
-                          ⚠ Click &quot;Authorize&quot; below
-                        </span>
-                      </>
-                    )}
+                  {/* Info Box */}
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                    <p className="font-semibold mb-1">ℹ️ What is this?</p>
+                    <p>
+                      This is a temporary MetaMask Smart Account that can bridge on your behalf
+                      when gas fees exceed your threshold. It&apos;s stored locally on this device only.
+                    </p>
                   </div>
                 </div>
-
-                {/* Quick Actions */}
-                <div className="flex gap-2">
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-4 bg-white rounded-lg border-2 border-dashed border-gray-300">
+                    <p className="text-gray-600 mb-3">
+                      💡 <strong>First time here?</strong> Create a Smart Account session to enable
+                      automated bridging when gas fees spike.
+                    </p>
+                    <ul className="text-sm text-gray-500 space-y-1 ml-6 list-disc">
+                      <li>Secured by MetaMask Delegation Toolkit</li>
+                      <li>Works only on this device</li>
+                      <li>Can be revoked anytime</li>
+                    </ul>
+                  </div>
+                  
                   <button
-                    onClick={() => {
-                      window.open(
-                        `https://monad-testnet.socialscan.io/tx/${sessionAddress}`,
-                        '_blank'
-                      );
-                    }}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm flex items-center gap-2"
+                    onClick={createSession}
+                    disabled={sessionLoading}
+                    className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold text-lg shadow-md"
                   >
-                    🔍 View on Explorer
-                  </button>
-                  <button
-                    onClick={revokeSession}
-                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm flex items-center gap-2"
-                  >
-                    🗑️ Revoke Session
+                    {sessionLoading ? '⏳ Creating Smart Account...' : '🚀 Create Session Account'}
                   </button>
                 </div>
+              )}
+            </div>
+          )}
 
-                {/* Info Box */}
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
-                  <p className="font-semibold mb-1">ℹ️ What is this?</p>
-                  <p>
-                    This is a temporary MetaMask Smart Account that can bridge on your behalf
-                    when gas fees exceed your threshold. It&quot;s stored locally on this device only.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="p-4 bg-white rounded-lg border-2 border-dashed border-gray-300">
-                  <p className="text-gray-600 mb-3">
-                    💡 <strong>First time here?</strong> Create a Smart Account session to enable
-                    automated bridging when gas fees spike.
-                  </p>
-                  <ul className="text-sm text-gray-500 space-y-1 ml-6 list-disc">
-                    <li>Secured by MetaMask Delegation Toolkit</li>
-                    <li>Works only on this device</li>
-                    <li>Can be revoked anytime</li>
-                  </ul>
-                </div>
-                
-                <button
-                  onClick={createSession}
-                  disabled={sessionLoading}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold text-lg shadow-md"
-                >
-                  {sessionLoading ? '⏳ Creating Smart Account...' : '🚀 Create Session Account'}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+          {/* Authorization Section - Only show if session exists but not authorized */}
+          {isConnected && hasSession && !isAuthorized && (
+            <div className="p-4 border-2 border-orange-300 rounded-lg bg-orange-50 mt-4">
+              <h3 className="font-semibold mb-2 text-orange-800 flex items-center gap-2">
+                ⚠️ Authorization Required
+              </h3>
+              <p className="text-sm text-orange-700 mb-3">
+                Your Smart Account needs on-chain authorization to bridge automatically.
+                This is a one-time transaction.
+              </p>
+              <button
+                onClick={handleAuthorizeSession}
+                disabled={isGrantingPermission}
+                className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 font-semibold"
+              >
+                {isGrantingPermission ? '⏳ Authorizing...' : '🔑 Authorize Smart Account Now'}
+              </button>
+            </div>
+          )}
 
-        {/* Authorization Section - Only show if session exists but not authorized */}
-        {isConnected && hasSession && !isAuthorized && (
-          <div className="p-4 border-2 border-orange-300 rounded-lg bg-orange-50 mt-4">
-            <h3 className="font-semibold mb-2 text-orange-800 flex items-center gap-2">
-              ⚠️ Authorization Required
-            </h3>
-            <p className="text-sm text-orange-700 mb-3">
-              Your Smart Account needs on-chain authorization to bridge automatically.
-              This is a one-time transaction.
-            </p>
-            <button
-              onClick={handleAuthorizeSession}
-              disabled={isGrantingPermission}
-              className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 font-semibold"
-            >
-              {isGrantingPermission ? '⏳ Authorizing...' : '🔑 Authorize Smart Account Now'}
-            </button>
-          </div>
-        )}
+          {/* Success message after authorization */}
+          {isConnected && hasSession && isAuthorized && permissionsGranted && (
+            <div className="p-4 border-2 border-green-300 rounded-lg bg-green-50 mt-4">
+              <h3 className="font-semibold mb-2 text-green-800 flex items-center gap-2">
+                ✅ All Set! Automation Ready
+              </h3>
+              <p className="text-sm text-green-700">
+                Your MetaMask Smart Account is authorized and ready to bridge automatically
+                when gas exceeds your threshold.
+              </p>
+            </div>
+          )}
 
-        {/* Success message after authorization */}
-        {isConnected && hasSession && isAuthorized && permissionsGranted && (
-          <div className="p-4 border-2 border-green-300 rounded-lg bg-green-50 mt-4">
-            <h3 className="font-semibold mb-2 text-green-800 flex items-center gap-2">
-              ✅ All Set! Automation Ready
-            </h3>
-            <p className="text-sm text-green-700">
-              Your MetaMask Smart Account is authorized and ready to bridge automatically
-              when gas exceeds your threshold.
-            </p>
-          </div>
-        )}
+          <p className="mt-4 text-gray-600">{status}</p>
 
-        <p className="mt-4 text-gray-600">{status}</p>
-
-        {!isConnected && <p className="mt-4">Connect your wallet to see live gas monitoring!</p>}
+          {!isConnected && <p className="mt-4">Connect your wallet to see live gas monitoring!</p>}
+        </div>
       </main>
     </>
   );
