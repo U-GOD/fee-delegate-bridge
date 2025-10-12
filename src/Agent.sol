@@ -201,27 +201,14 @@ contract Agent {
 
     // Mock fallback for testnet
     function getMockGas() internal pure returns (uint256) {
-        return 50;  // Fixed 50 gwei—tweak to sim spikes
+        return 50;  // Fixed 50 gwei
     }
 
     // Check current ETH gas vs. user's threshold—core trigger for auto-bridging (returns gwei + bool).
     function checkGas(address _user) external view returns (uint256 currentGasGwei, bool shouldTrigger) {
-        // // Fetch latest from oracle (ignores roundId/startedAt—focus on answer/updatedAt).
-        // (, int256 answer, , uint256 updatedAt, ) = gasOracle.latestRoundData();
+        currentGasGwei = getMockGas(); 
         
-        // // Staleness check 
-        // require(block.timestamp - updatedAt <= 5 minutes, "Stale oracle data");
-        
-        // // Convert oracle answer to gwei—handle 8 decimals for gas feeds (e.g., 25e8 = 25 gwei).
-        // uint8 dec = gasOracle.decimals();
-        // currentGasGwei = uint256(answer) / (10 ** dec);
-
-        // In checkGas, replace fetch block with:
-        currentGasGwei = getMockGas();  // Temp mock for debug—no staleness or convert needed.
-        
-        // Direct mapping access (fixes the getGasThreshold error)
         uint256 userThreshold = gasThresholds[_user];
-        
         // Only trigger if user has set a threshold AND current gas exceeds it
         shouldTrigger = (userThreshold > 0) && (currentGasGwei > userThreshold);
     }
