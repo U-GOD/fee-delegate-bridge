@@ -441,205 +441,290 @@ export default function Home() {
       {/* Header Component */}
       <Header />
 
-      {/* Main Content */}
-      <main className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-12">
-        <div className="container mx-auto max-w-6xl px-4">
+      {/* Main Content with Enhanced Background */}
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 py-8">
+        <div className="container mx-auto max-w-7xl px-4">
+          
+          {/* Hero Section - Enhanced with better spacing */}
+          {isConnected && (
+            <div className="text-center mb-10">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 border border-blue-200 rounded-full mb-4">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-blue-700 font-medium">Live Monitoring Active</span>
+              </div>
+              
+              <h2 className="text-4xl font-bold text-gray-900 mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Gas Fee Monitor & Auto-Bridge
+              </h2>
+              <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+                Automate your cross-chain bridging based on real-time gas prices. 
+                Set your threshold and let our smart account handle the rest.
+              </p>
+            </div>
+          )}
 
           {isConnected && (
             <>
-              {/* Hero Section */}
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                  Your gas threshold monitor
-                </h2>
-                <p className="text-gray-600">
-                  Automate cross-chain bridging based on gas prices
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                {/* Gas Monitor - Left Side */}
-                <GasMonitor
-                  isLoading={gasLoading}
-                  error={gasError}
-                  currentGas={Number(currentGas)}
-                  threshold={threshold}
-                  shouldTrigger={shouldTrigger}
-                />
-
-                {/* Action Panel - Right Side */}
-                <ActionPanel
-                  threshold={threshold}
-                  setThreshold={setThreshold}
-                  onSetThreshold={handleSetThreshold}
-                  onDelegate={handleAuthorizeSession}
-                  onBridge={handleBridgeWithFee}
-                  shouldTrigger={shouldTrigger}
-                  isPending={isPending}
-                  depositAmount={depositAmount}
-                  setDepositAmount={setDepositAmount}
-                  onDeposit={handleDeposit}
-                  depositBalance={depositBalance}
-                  onWithdraw={handleWithdraw}
-                />
-              </div>
-            </>
-          )}
-
-          {/* Enhanced Session Status Panel */}
-          {isConnected && (
-            <div className="p-6 border-2 rounded-xl bg-gradient-to-br from-blue-50 to-purple-50 mt-4 shadow-md">
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <span>🔐</span> MetaMask Smart Account Status
-              </h3>
-              
-              {sessionLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin h-5 w-5 border-2 border-blue-500 rounded-full border-t-transparent"></div>
-                  <p className="text-gray-600">Loading session...</p>
+              {/* Main Dashboard Grid - Two Column Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                {/* Gas Monitor - Takes 2 columns on large screens */}
+                <div className="lg:col-span-2">
+                  <GasMonitor
+                    isLoading={gasLoading}
+                    error={gasError}
+                    currentGas={Number(currentGas)}
+                    threshold={threshold}
+                    shouldTrigger={shouldTrigger}
+                  />
                 </div>
-              ) : hasSession ? (
-                <div className="space-y-4">
-                  {/* Session Address Display */}
-                  <div className="p-4 bg-white rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 mb-1">Session Smart Account</p>
-                    <div className="flex items-center gap-2">
-                      <code className="text-sm font-mono bg-gray-100 px-3 py-2 rounded flex-1">
-                        {sessionAddress}
-                      </code>
+
+                {/* Action Panel - Takes 1 column */}
+                <div className="lg:col-span-1">
+                  <ActionPanel
+                    threshold={threshold}
+                    setThreshold={setThreshold}
+                    onSetThreshold={handleSetThreshold}
+                    onDelegate={handleAuthorizeSession}
+                    onBridge={handleBridgeWithFee}
+                    shouldTrigger={shouldTrigger}
+                    isPending={isPending}
+                    depositAmount={depositAmount}
+                    setDepositAmount={setDepositAmount}
+                    onDeposit={handleDeposit}
+                    depositBalance={depositBalance}
+                    onWithdraw={handleWithdraw}
+                  />
+                </div>
+              </div>
+
+              {/* Session Status - Full Width Card */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl">
+                    <span className="text-2xl">🔐</span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">MetaMask Smart Account Status</h3>
+                    <p className="text-sm text-gray-500">Manage your delegation session</p>
+                  </div>
+                </div>
+                
+                {sessionLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="animate-spin h-8 w-8 border-3 border-blue-500 rounded-full border-t-transparent"></div>
+                      <p className="text-gray-600">Loading session status...</p>
+                    </div>
+                  </div>
+                ) : hasSession ? (
+                  <div className="space-y-4">
+                    {/* Session Info Cards Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Session Address Card */}
+                      <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-lg">📍</span>
+                          <p className="text-sm font-semibold text-gray-700">Session Smart Account</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs font-mono bg-white px-3 py-2 rounded-lg flex-1 text-gray-800 border border-blue-200">
+                            {sessionAddress}
+                          </code>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(sessionAddress || '');
+                              setStatus('📋 Address copied to clipboard!');
+                            }}
+                            className="px-3 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
+                            title="Copy address"
+                          >
+                            📋
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Authorization Status Card */}
+                      <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-lg">⚡</span>
+                          <p className="text-sm font-semibold text-gray-700">Authorization Status</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {isAuthorized ? (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></div>
+                                <span className="text-green-700 font-bold">Active</span>
+                              </div>
+                              <span className="text-xs text-green-600 bg-green-100 px-3 py-1 rounded-full font-medium">
+                                ✓ Can auto-bridge
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                                <span className="text-orange-700 font-bold">Inactive</span>
+                              </div>
+                              <span className="text-xs text-orange-600 bg-orange-100 px-3 py-1 rounded-full font-medium">
+                                ⚠ Needs authorization
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quick Actions Bar */}
+                    <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(sessionAddress || '');
-                          setStatus('📋 Address copied!');
+                          window.open(
+                            `https://monad-testnet.socialscan.io/tx/${sessionAddress}`,
+                            '_blank'
+                          );
                         }}
-                        className="px-3 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
-                        title="Copy address"
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                       >
-                        📋
+                        🔍 View on Explorer
+                      </button>
+                      <button
+                        onClick={revokeSession}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
+                      >
+                        🗑️ Revoke Session
+                      </button>
+                    </div>
+
+                    {/* Info Box */}
+                    <div className="p-4 bg-blue-50 border-l-4 border-blue-400 rounded-lg">
+                      <div className="flex gap-3">
+                        <span className="text-xl">ℹ️</span>
+                        <div>
+                          <p className="font-semibold text-blue-900 mb-1">About Your Smart Account</p>
+                          <p className="text-sm text-blue-800">
+                            This temporary account bridges assets on your behalf when gas fees exceed your threshold. 
+                            It&apos;s secured by MetaMask&apos;s delegation system and stored locally on this device.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* First-Time User Card */}
+                    <div className="p-6 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border-2 border-dashed border-purple-200">
+                      <div className="text-center">
+                        <span className="text-4xl mb-3 block">🚀</span>
+                        <h4 className="text-lg font-bold text-gray-900 mb-2">
+                          Welcome to Automated Bridging!
+                        </h4>
+                        <p className="text-gray-600 mb-4">
+                          Create a Smart Account session to enable automated bridging when gas fees spike.
+                        </p>
+                        <ul className="text-sm text-gray-600 space-y-2 text-left max-w-md mx-auto">
+                          <li className="flex items-start gap-2">
+                            <span className="text-green-500 font-bold">✓</span>
+                            <span>Secured by MetaMask Delegation Toolkit</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-green-500 font-bold">✓</span>
+                            <span>Works only on this device</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-green-500 font-bold">✓</span>
+                            <span>Can be revoked anytime</span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={createSession}
+                      disabled={sessionLoading}
+                      className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-xl hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-bold text-lg transition-all duration-200"
+                    >
+                      {sessionLoading ? '⏳ Creating Your Smart Account...' : '✨ Create Session Account'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Authorization Alert - Only show if session exists but not authorized */}
+              {hasSession && !isAuthorized && (
+                <div className="p-5 border-2 border-orange-400 rounded-xl bg-gradient-to-r from-orange-50 to-yellow-50 mb-6 shadow-md">
+                  <div className="flex items-start gap-4">
+                    <div className="p-2 bg-orange-500 rounded-lg">
+                      <span className="text-2xl">⚠️</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg mb-2 text-orange-900">
+                        Authorization Required
+                      </h3>
+                      <p className="text-sm text-orange-800 mb-4">
+                        Your Smart Account needs on-chain authorization to bridge automatically.
+                        This is a one-time transaction that grants permission.
+                      </p>
+                      <button
+                        onClick={handleAuthorizeSession}
+                        disabled={isGrantingPermission}
+                        className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-bold transition-colors shadow-md hover:shadow-lg"
+                      >
+                        {isGrantingPermission ? '⏳ Authorizing...' : '🔑 Authorize Smart Account Now'}
                       </button>
                     </div>
                   </div>
-
-                  {/* Authorization Status */}
-                  <div className="p-4 bg-white rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-500 mb-2">Authorization Status</p>
-                    <div className="flex items-center gap-3">
-                      {isAuthorized ? (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                            <span className="text-green-700 font-semibold">Authorized & Active</span>
-                          </div>
-                          <span className="text-xs text-gray-500 bg-green-50 px-2 py-1 rounded">
-                            ✓ Can bridge automatically
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                            <span className="text-orange-700 font-semibold">Not Authorized</span>
-                          </div>
-                          <span className="text-xs text-gray-500 bg-orange-50 px-2 py-1 rounded">
-                            ⚠ Click &quot;Authorize&quot; below
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Quick Actions */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        window.open(
-                          `https://monad-testnet.socialscan.io/tx/${sessionAddress}`,
-                          '_blank'
-                        );
-                      }}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm flex items-center gap-2"
-                    >
-                      🔍 View on Explorer
-                    </button>
-                    <button
-                      onClick={revokeSession}
-                      className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm flex items-center gap-2"
-                    >
-                      🗑️ Revoke Session
-                    </button>
-                  </div>
-
-                  {/* Info Box */}
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
-                    <p className="font-semibold mb-1">ℹ️ What is this?</p>
-                    <p>
-                      This is a temporary MetaMask Smart Account that can bridge on your behalf
-                      when gas fees exceed your threshold. It&apos;s stored locally on this device only.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="p-4 bg-white rounded-lg border-2 border-dashed border-gray-300">
-                    <p className="text-gray-600 mb-3">
-                      💡 <strong>First time here?</strong> Create a Smart Account session to enable
-                      automated bridging when gas fees spike.
-                    </p>
-                    <ul className="text-sm text-gray-500 space-y-1 ml-6 list-disc">
-                      <li>Secured by MetaMask Delegation Toolkit</li>
-                      <li>Works only on this device</li>
-                      <li>Can be revoked anytime</li>
-                    </ul>
-                  </div>
-                  
-                  <button
-                    onClick={createSession}
-                    disabled={sessionLoading}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold text-lg shadow-md"
-                  >
-                    {sessionLoading ? '⏳ Creating Smart Account...' : '🚀 Create Session Account'}
-                  </button>
                 </div>
               )}
+
+              {/* Success Banner - After authorization */}
+              {hasSession && isAuthorized && permissionsGranted && (
+                <div className="p-5 border-2 border-green-400 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 mb-6 shadow-md">
+                  <div className="flex items-start gap-4">
+                    <div className="p-2 bg-green-500 rounded-lg">
+                      <span className="text-2xl">✅</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg mb-2 text-green-900">
+                        All Set! Automation Ready
+                      </h3>
+                      <p className="text-sm text-green-800">
+                        Your MetaMask Smart Account is authorized and ready to bridge automatically
+                        when gas exceeds your threshold. You can now sit back and relax!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Status Message */}
+          {status && (
+            <div className="fixed bottom-4 right-4 px-6 py-3 bg-gray-900 text-white rounded-lg shadow-2xl animate-slide-up">
+              {status}
             </div>
           )}
 
-          {/* Authorization Section - Only show if session exists but not authorized */}
-          {isConnected && hasSession && !isAuthorized && (
-            <div className="p-4 border-2 border-orange-300 rounded-lg bg-orange-50 mt-4">
-              <h3 className="font-semibold mb-2 text-orange-800 flex items-center gap-2">
-                ⚠️ Authorization Required
-              </h3>
-              <p className="text-sm text-orange-700 mb-3">
-                Your Smart Account needs on-chain authorization to bridge automatically.
-                This is a one-time transaction.
-              </p>
-              <button
-                onClick={handleAuthorizeSession}
-                disabled={isGrantingPermission}
-                className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 font-semibold"
-              >
-                {isGrantingPermission ? '⏳ Authorizing...' : '🔑 Authorize Smart Account Now'}
-              </button>
+          {/* Connect Wallet Prompt */}
+          {!isConnected && (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+              <div className="p-8 bg-white rounded-2xl shadow-xl max-w-md">
+                <span className="text-6xl mb-4 block">🔌</span>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                  Connect Your Wallet
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Connect your wallet to start monitoring gas fees and enable automated bridging.
+                </p>
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-blue-800">
+                    👆 Click the &quot;Connect Wallet&quot; button in the header to get started
+                  </p>
+                </div>
+              </div>
             </div>
           )}
-
-          {/* Success message after authorization */}
-          {isConnected && hasSession && isAuthorized && permissionsGranted && (
-            <div className="p-4 border-2 border-green-300 rounded-lg bg-green-50 mt-4">
-              <h3 className="font-semibold mb-2 text-green-800 flex items-center gap-2">
-                ✅ All Set! Automation Ready
-              </h3>
-              <p className="text-sm text-green-700">
-                Your MetaMask Smart Account is authorized and ready to bridge automatically
-                when gas exceeds your threshold.
-              </p>
-            </div>
-          )}
-
-          <p className="mt-4 text-gray-600">{status}</p>
-
-          {!isConnected && <p className="mt-4">Connect your wallet to see live gas monitoring!</p>}
         </div>
       </main>
     </>
