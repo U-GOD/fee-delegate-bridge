@@ -9,9 +9,16 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@lit/reactive-element": "^2.1.1",
     "@metamask/delegation-toolkit": "^0.13.0",
     "@rainbow-me/rainbowkit": "^2.2.8",
+    "@reown/appkit-common": "^1.8.10",
+    "@reown/appkit-controllers": "^1.8.10",
+    "@reown/appkit-scaffold-ui": "^1.8.10",
+    "@reown/appkit-ui": "^1.8.10",
+    "@reown/appkit-utils": "^1.8.10",
     "@tanstack/react-query": "^5.90.1",
+    "lit": "^3.3.1",
     "next": "15.5.3",
     "permissionless": "^0.2.57",
     "react": "19.1.0",
@@ -21,13 +28,14 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    // "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.20",
     "eslint": "^9",
     "eslint-config-next": "15.5.3",
-    "tailwindcss": "^4",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
     "typescript": "^5"
   }
 }
