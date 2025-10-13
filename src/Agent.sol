@@ -201,7 +201,7 @@ contract Agent {
 
     // Mock fallback for testnet
     function getMockGas() internal pure returns (uint256) {
-        return 50;  // Fixed 50 gwei
+        return 30;  // Fixed 30 gwei
     }
 
     // Check current ETH gas vs. user's threshold—core trigger for auto-bridging (returns gwei + bool).
