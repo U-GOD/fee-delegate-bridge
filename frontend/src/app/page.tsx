@@ -13,16 +13,6 @@ import Header from '@/components/Header';
 import GasMonitor from '@/components/GasMonitor';
 import ActionPanel from '@/components/ActionPanel';
 
-// Type declaration for MetaMask's experimental wallet_grantPermissions
-// declare global {
-//   interface Window {
-//     ethereum?: {
-//       request: (args: { method: string; params?: any[] }) => Promise<any>;
-//       isMetaMask?: boolean;
-//     };
-//   }
-// }
-
 export default function Home() {
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
