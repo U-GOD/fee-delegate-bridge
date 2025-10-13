@@ -209,8 +209,8 @@ contract Agent {
         currentGasGwei = getMockGas(); 
         
         uint256 userThreshold = gasThresholds[_user];
-        // Only trigger if user has set a threshold AND current gas exceeds it
-        shouldTrigger = (userThreshold > 0) && (currentGasGwei > userThreshold);
+        // Only trigger if user has set a threshold AND current gas is below it
+        shouldTrigger = (userThreshold > 0) && (currentGasGwei < userThreshold);
     }
 
     function checkGasAndBridge(address _user) external payable { 
