@@ -431,11 +431,11 @@ export default function Home() {
       {/* Header Component */}
       <Header />
 
-      {/* Main Content with Enhanced Background */}
+      {/* Main Content */}
       <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 py-8">
-        <div className="container mx-auto max-w-7xl px-4">
+        <div className="container mx-auto max-w-4xl px-4">
           
-          {/* Hero Section - Clean */}
+          {/* Hero Section */}
           {isConnected && (
             <div className="text-center mb-10">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 border border-blue-200 rounded-full mb-4">
@@ -446,283 +446,413 @@ export default function Home() {
               <h2 className="text-4xl font-bold text-gray-900 mb-3">
                 Gas Fee Monitor & Auto-Bridge
               </h2>
-              <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-                Automate your cross-chain bridging based on real-time gas prices. 
-                Set your threshold and let our smart account handle the rest.
+              <p className="text-gray-600 text-lg max-w-2xl mx-auto mb-6">
+                Follow the steps below to set up automated cross-chain bridging.
               </p>
+
+              {/* Progress Indicator */}
+              <div className="flex items-center justify-center gap-2 text-sm">
+                <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${
+                  depositBalance && Number(depositBalance) > 0 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${
+                    depositBalance && Number(depositBalance) > 0 ? 'bg-green-500' : 'bg-gray-400'
+                  }`}></div>
+                  <span className="font-medium">Funded</span>
+                </div>
+                <div className="w-8 h-0.5 bg-gray-300"></div>
+                <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${
+                  threshold 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${
+                    threshold ? 'bg-green-500' : 'bg-gray-400'
+                  }`}></div>
+                  <span className="font-medium">Threshold Set</span>
+                </div>
+                <div className="w-8 h-0.5 bg-gray-300"></div>
+                <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${
+                  hasSession 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${
+                    hasSession ? 'bg-green-500' : 'bg-gray-400'
+                  }`}></div>
+                  <span className="font-medium">Session Created</span>
+                </div>
+                <div className="w-8 h-0.5 bg-gray-300"></div>
+                <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${
+                  isAuthorized 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${
+                    isAuthorized ? 'bg-green-500' : 'bg-gray-400'
+                  }`}></div>
+                  <span className="font-medium">Authorized</span>
+                </div>
+              </div>
             </div>
           )}
 
           {isConnected && (
-            <>
-              {/* Main Dashboard Grid - Two Column Layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                {/* Gas Monitor - Takes 2 columns on large screens */}
-                <div className="lg:col-span-2">
-                  <GasMonitor
-                    isLoading={gasLoading}
-                    error={gasError}
-                    currentGas={Number(currentGas)}
-                    threshold={threshold}
-                    shouldTrigger={shouldTrigger}
-                  />
-                </div>
-
-                {/* Action Panel - Takes 1 column */}
-                <div className="lg:col-span-1">
-                  <ActionPanel
-                    threshold={threshold}
-                    setThreshold={setThreshold}
-                    onSetThreshold={handleSetThreshold}
-                    onDelegate={handleAuthorizeSession}
-                    onBridge={handleBridgeWithFee}
-                    shouldTrigger={shouldTrigger}
-                    isPending={isPending}
-                    depositAmount={depositAmount}
-                    setDepositAmount={setDepositAmount}
-                    onDeposit={handleDeposit}
-                    depositBalance={depositBalance}
-                    onWithdraw={handleWithdraw}
-                  />
-                </div>
-              </div>
-
-              {/* Session Status - Full Width Card */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
-                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-                  <div className="p-3 bg-blue-500 rounded-xl">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
+            <div className="space-y-6">
+              
+              {/* STEP 1: Deposit Funds */}
+              <div className="bg-white rounded-2xl shadow-lg border-2 border-blue-200 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-lg">
+                    1
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">MetaMask Smart Account</h3>
-                    <p className="text-sm text-gray-500">Manage your delegation session</p>
+                    <h3 className="text-xl font-bold text-gray-900">Deposit Funds</h3>
+                    <p className="text-sm text-gray-500">Add MON tokens for bridge operations</p>
                   </div>
                 </div>
-                
-                {sessionLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="animate-spin h-8 w-8 border-3 border-blue-500 rounded-full border-t-transparent"></div>
-                      <p className="text-gray-600">Loading session status...</p>
+
+                <div className="bg-blue-50 rounded-xl border border-blue-200 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-semibold text-gray-900">Your Balance</span>
+                    <div className="text-right">
+                      <p className="text-3xl font-bold text-blue-600">
+                        {depositBalance !== undefined 
+                          ? `${(Number(depositBalance) / 1e18).toFixed(4)}` 
+                          : '0.0000'}
+                      </p>
+                      <p className="text-xs text-gray-500">MON</p>
                     </div>
                   </div>
-                ) : hasSession ? (
-                  <div className="space-y-4">
-                    {/* Session Info Cards Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Session Address Card */}
-                      <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
-                        <div className="flex items-center gap-2 mb-2">
-                          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          <p className="text-sm font-semibold text-gray-700">Session Address</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <code className="text-xs font-mono bg-white px-3 py-2 rounded-lg flex-1 text-gray-800 border border-blue-200">
-                            {sessionAddress}
-                          </code>
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(sessionAddress || '');
-                              setStatus('Address copied to clipboard!');
-                            }}
-                            className="px-3 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
-                            title="Copy address"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
 
-                      {/* Authorization Status Card */}
-                      <div className="p-4 bg-green-50 rounded-xl border border-green-200">
-                        <div className="flex items-center gap-2 mb-3">
-                          <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                          </svg>
-                          <p className="text-sm font-semibold text-gray-700">Authorization Status</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {isAuthorized ? (
-                            <>
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></div>
-                                <span className="text-green-700 font-bold">Active</span>
-                              </div>
-                              <span className="text-xs text-green-600 bg-green-100 px-3 py-1 rounded-full font-medium">
-                                Can auto-bridge
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                                <span className="text-orange-700 font-bold">Inactive</span>
-                              </div>
-                              <span className="text-xs text-orange-600 bg-orange-100 px-3 py-1 rounded-full font-medium">
-                                Needs authorization
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Quick Actions Bar */}
-                    <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        placeholder="Amount to deposit"
+                        value={depositAmount}
+                        onChange={(e) => setDepositAmount(e.target.value)}
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        step="0.01"
+                      />
                       <button
-                        onClick={() => {
-                          window.open(
-                            `https://monad-testnet.socialscan.io/address/${sessionAddress}`,
-                            '_blank'
-                          );
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                        onClick={handleDeposit}
+                        disabled={!depositAmount || parseFloat(depositAmount) <= 0}
+                        className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold transition-colors"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        View on Explorer
-                      </button>
-                      <button
-                        onClick={revokeSession}
-                        className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        Revoke Session
+                        Deposit
                       </button>
                     </div>
 
-                    {/* Info Box */}
-                    <div className="p-4 bg-blue-50 border-l-4 border-blue-400 rounded-lg">
-                      <div className="flex gap-3">
-                        <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <div>
-                          <p className="font-semibold text-blue-900 mb-1">About Your Smart Account</p>
-                          <p className="text-sm text-blue-800">
-                            This temporary account bridges assets on your behalf when gas fees exceed your threshold. 
-                            It&apos;s secured by MetaMask&apos;s delegation system and stored locally on this device.
-                          </p>
-                        </div>
-                      </div>
+                    {/* Quick amounts */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {['0.1', '0.5', '1'].map((amount) => (
+                        <button
+                          key={amount}
+                          onClick={() => setDepositAmount(amount)}
+                          className="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 text-sm font-medium transition-colors"
+                        >
+                          {amount} MON
+                        </button>
+                      ))}
                     </div>
+
+                    {/* Withdraw */}
+                    {depositBalance !== undefined && Number(depositBalance) > 0 && (
+                      <button
+                        onClick={handleWithdraw}
+                        className="w-full mt-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold text-sm transition-colors"
+                      >
+                        Withdraw All
+                      </button>
+                    )}
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {/* First-Time User Card */}
-                    <div className="p-6 bg-blue-50 rounded-xl border border-blue-200">
-                      <div className="text-center">
-                        <div className="w-16 h-16 mx-auto mb-4 bg-blue-500 rounded-full flex items-center justify-center">
-                          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                          </svg>
-                        </div>
-                        <h4 className="text-lg font-bold text-gray-900 mb-2">
-                          Welcome to Automated Bridging
-                        </h4>
-                        <p className="text-gray-600 mb-4">
-                          Create a Smart Account session to enable automated bridging when gas fees spike.
-                        </p>
-                        <ul className="text-sm text-gray-600 space-y-2 text-left max-w-md mx-auto">
-                          <li className="flex items-start gap-2">
-                            <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                            <span>Secured by MetaMask Delegation</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                            <span>Works only on this device</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                            <span>Can be revoked anytime</span>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                    
-                    <button
-                      onClick={createSession}
-                      disabled={sessionLoading}
-                      className="w-full px-6 py-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg transition-all duration-200 shadow-md hover:shadow-lg"
-                    >
-                      {sessionLoading ? 'Creating Smart Account...' : 'Create Session Account'}
-                    </button>
+
+                  <div className="mt-3 p-3 bg-blue-100 rounded-lg">
+                    <p className="text-xs text-blue-800">
+                      <strong>Note:</strong> Each bridge operation costs 0.1 MON. Make sure to deposit enough for multiple bridges.
+                    </p>
                   </div>
-                )}
+                </div>
               </div>
 
-              {/* Authorization Alert - Only show if session exists but not authorized */}
-              {hasSession && !isAuthorized && (
-                <div className="p-5 border-2 border-orange-400 rounded-xl bg-orange-50 mb-6">
-                  <div className="flex items-start gap-4">
-                    <div className="p-2 bg-orange-500 rounded-lg flex-shrink-0">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg mb-2 text-orange-900">
-                        Authorization Required
-                      </h3>
-                      <p className="text-sm text-orange-800 mb-4">
-                        Your Smart Account needs on-chain authorization to bridge automatically.
-                        This is a one-time transaction.
+              {/* STEP 2: Set Gas Threshold */}
+              <div className="bg-white rounded-2xl shadow-lg border-2 border-blue-200 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-lg">
+                    2
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Set Gas Threshold</h3>
+                    <p className="text-sm text-gray-500">Define when to trigger auto-bridge</p>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+                  <label className="block text-sm font-semibold text-gray-900 mb-3">
+                    Threshold (Gwei)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      placeholder="e.g., 50"
+                      value={threshold}
+                      onChange={(e) => setThreshold(e.target.value)}
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-medium"
+                    />
+                    <button
+                      onClick={handleSetThreshold}
+                      className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold transition-colors whitespace-nowrap"
+                    >
+                      Set Threshold
+                    </button>
+                  </div>
+                  
+                  {threshold && (
+                    <div className="mt-3 p-3 bg-green-100 rounded-lg">
+                      <p className="text-sm text-green-800">
+                        <strong>Active threshold:</strong> Bridge will trigger when gas exceeds {threshold} Gwei
                       </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* STEP 3: Create Session Account (Show if NO session) */}
+              {!hasSession && (
+                <div className="bg-white rounded-2xl shadow-lg border-2 border-blue-200 p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-lg">
+                      3
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">Create Session Account</h3>
+                      <p className="text-sm text-gray-500">Set up automated bridging</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 rounded-xl border border-blue-200 p-6">
+                    <div className="text-center">
+                      <div className="w-16 h-16 mx-auto mb-4 bg-blue-500 rounded-full flex items-center justify-center">
+                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                      </div>
+                      <h4 className="text-lg font-bold text-gray-900 mb-2">
+                        Ready for Automation
+                      </h4>
+                      <p className="text-gray-600 mb-4">
+                        Create a temporary smart account that will execute bridges on your behalf when gas prices spike.
+                      </p>
+                      <ul className="text-sm text-gray-600 space-y-2 text-left max-w-md mx-auto mb-6">
+                        <li className="flex items-start gap-2">
+                          <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span>Secured by MetaMask Delegation Toolkit</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span>Stored locally on this device only</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span>Can be revoked anytime</span>
+                        </li>
+                      </ul>
+                      
                       <button
-                        onClick={handleAuthorizeSession}
-                        disabled={isGrantingPermission}
-                        className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-bold transition-colors"
+                        onClick={createSession}
+                        disabled={sessionLoading}
+                        className="w-full px-6 py-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg transition-all duration-200 shadow-md hover:shadow-lg"
                       >
-                        {isGrantingPermission ? 'Authorizing...' : 'Authorize Smart Account'}
+                        {sessionLoading ? 'Creating Smart Account...' : 'Create Session Account'}
                       </button>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Success Banner - After authorization */}
-              {hasSession && isAuthorized && permissionsGranted && (
-                <div className="p-5 border-2 border-green-400 rounded-xl bg-green-50 mb-6">
+              {/* STEP 4: Authorize Session (Show if session exists but NOT authorized) */}
+              {hasSession && !isAuthorized && (
+                <div className="bg-white rounded-2xl shadow-lg border-2 border-orange-300 p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold text-lg">
+                      4
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">Authorize Session</h3>
+                      <p className="text-sm text-gray-500">Grant on-chain permission</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-orange-50 rounded-xl border border-orange-200 p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 bg-orange-500 rounded-lg flex-shrink-0">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-lg mb-2 text-orange-900">
+                          One More Step!
+                        </h4>
+                        <p className="text-sm text-orange-800 mb-4">
+                          Your smart account is created but needs on-chain authorization to bridge automatically.
+                          This is a one-time transaction that grants permission to the contract.
+                        </p>
+                        <button
+                          onClick={handleAuthorizeSession}
+                          disabled={isGrantingPermission}
+                          className="w-full px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-bold transition-colors"
+                        >
+                          {isGrantingPermission ? 'Authorizing...' : 'Authorize Smart Account'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 5: Success Banner (Show when fully authorized) */}
+              {hasSession && isAuthorized && (
+                <div className="bg-white rounded-2xl shadow-lg border-2 border-green-300 p-6">
                   <div className="flex items-start gap-4">
-                    <div className="p-2 bg-green-500 rounded-lg flex-shrink-0">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="p-3 bg-green-500 rounded-lg flex-shrink-0">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-bold text-lg mb-2 text-green-900">
-                        All Set! Automation Ready
+                      <h3 className="font-bold text-2xl mb-2 text-green-900">
+                        All Set! Automation Active
                       </h3>
-                      <p className="text-sm text-green-800">
-                        Your MetaMask Smart Account is authorized and ready to bridge automatically
-                        when gas exceeds your threshold.
+                      <p className="text-green-800 mb-4">
+                        Your MetaMask Smart Account is fully configured and monitoring gas prices. 
+                        When gas exceeds your threshold, the bridge will execute automatically.
+                      </p>
+                      <div className="flex gap-3">
+                        <div className="flex-1 p-3 bg-green-100 rounded-lg text-center">
+                          <p className="text-sm text-green-700 font-medium">Balance</p>
+                          <p className="text-lg font-bold text-green-900">
+                            {depositBalance ? `${(Number(depositBalance) / 1e18).toFixed(4)} MON` : '0 MON'}
+                          </p>
+                        </div>
+                        <div className="flex-1 p-3 bg-green-100 rounded-lg text-center">
+                          <p className="text-sm text-green-700 font-medium">Threshold</p>
+                          <p className="text-lg font-bold text-green-900">{threshold || '--'} Gwei</p>
+                        </div>
+                        <div className="flex-1 p-3 bg-green-100 rounded-lg text-center">
+                          <p className="text-sm text-green-700 font-medium">Status</p>
+                          <p className="text-lg font-bold text-green-900">Active</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Gas Monitor (Show when authorized) */}
+              {hasSession && isAuthorized && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2">
+                    <GasMonitor
+                      isLoading={gasLoading}
+                      error={gasError}
+                      currentGas={Number(currentGas)}
+                      threshold={threshold}
+                      shouldTrigger={shouldTrigger}
+                    />
+                  </div>
+                  <div className="lg:col-span-1">
+                    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 h-full">
+                      <h3 className="text-xl font-bold text-gray-900 mb-4">Bridge Control</h3>
+                      <button
+                        onClick={handleBridgeWithFee}
+                        disabled={!shouldTrigger || isPending}
+                        className="w-full px-6 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-bold text-lg shadow-md hover:shadow-lg disabled:shadow-none transition-all duration-200"
+                      >
+                        {isPending ? 'Bridging...' : shouldTrigger ? 'Bridge Now' : 'Waiting for Trigger'}
+                      </button>
+                      <p className="text-sm text-gray-500 mt-3 text-center">
+                        {shouldTrigger 
+                          ? 'Gas price is above threshold - you can bridge manually' 
+                          : 'Bridge will trigger automatically when conditions are met'}
                       </p>
                     </div>
                   </div>
                 </div>
               )}
-            </>
+
+              {/* Session Details (Show when session exists) */}
+              {hasSession && (
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Session Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+                      <p className="text-sm font-semibold text-gray-700 mb-2">Session Address</p>
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs font-mono bg-white px-3 py-2 rounded-lg flex-1 text-gray-800 border border-blue-200">
+                          {sessionAddress}
+                        </code>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(sessionAddress || '');
+                            setStatus('Address copied!');
+                          }}
+                          className="px-3 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+                      <p className="text-sm font-semibold text-gray-700 mb-2">Authorization Status</p>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${isAuthorized ? 'bg-green-500 animate-pulse' : 'bg-orange-500'}`}></div>
+                        <span className={`font-bold ${isAuthorized ? 'text-green-700' : 'text-orange-700'}`}>
+                          {isAuthorized ? 'Active' : 'Pending'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 mt-4">
+                    <button
+                      onClick={() => window.open(`https://monad-testnet.socialscan.io/address/${sessionAddress}`, '_blank')}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      View on Explorer
+                    </button>
+                    <button
+                      onClick={revokeSession}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Revoke Session
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
           )}
 
-          {/* Status Message */}
+          {/* Status Message Toast */}
           {status && (
-            <div className="fixed bottom-4 right-4 px-6 py-3 bg-gray-900 text-white rounded-lg shadow-2xl animate-slide-up">
+            <div className="fixed bottom-4 right-4 px-6 py-3 bg-gray-900 text-white rounded-lg shadow-2xl animate-slide-up z-50">
               {status}
             </div>
           )}
