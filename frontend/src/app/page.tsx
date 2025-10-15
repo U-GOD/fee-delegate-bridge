@@ -435,7 +435,7 @@ export default function Home() {
       <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 py-8">
         <div className="container mx-auto max-w-7xl px-4">
           
-          {/* Hero Section - Enhanced with better spacing */}
+          {/* Hero Section - Clean */}
           {isConnected && (
             <div className="text-center mb-10">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 border border-blue-200 rounded-full mb-4">
@@ -443,7 +443,7 @@ export default function Home() {
                 <span className="text-sm text-blue-700 font-medium">Live Monitoring Active</span>
               </div>
               
-              <h2 className="text-4xl font-bold text-gray-900 mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h2 className="text-4xl font-bold text-gray-900 mb-3">
                 Gas Fee Monitor & Auto-Bridge
               </h2>
               <p className="text-gray-600 text-lg max-w-2xl mx-auto">
@@ -488,13 +488,15 @@ export default function Home() {
               </div>
 
               {/* Session Status - Full Width Card */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl">
-                    <span className="text-2xl">🔐</span>
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
+                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+                  <div className="p-3 bg-blue-500 rounded-xl">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">MetaMask Smart Account Status</h3>
+                    <h3 className="text-xl font-bold text-gray-900">MetaMask Smart Account</h3>
                     <p className="text-sm text-gray-500">Manage your delegation session</p>
                   </div>
                 </div>
@@ -511,10 +513,13 @@ export default function Home() {
                     {/* Session Info Cards Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Session Address Card */}
-                      <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                      <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="text-lg">📍</span>
-                          <p className="text-sm font-semibold text-gray-700">Session Smart Account</p>
+                          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          <p className="text-sm font-semibold text-gray-700">Session Address</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <code className="text-xs font-mono bg-white px-3 py-2 rounded-lg flex-1 text-gray-800 border border-blue-200">
@@ -523,20 +528,24 @@ export default function Home() {
                           <button
                             onClick={() => {
                               navigator.clipboard.writeText(sessionAddress || '');
-                              setStatus('📋 Address copied to clipboard!');
+                              setStatus('Address copied to clipboard!');
                             }}
                             className="px-3 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
                             title="Copy address"
                           >
-                            📋
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
                           </button>
                         </div>
                       </div>
 
                       {/* Authorization Status Card */}
-                      <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                      <div className="p-4 bg-green-50 rounded-xl border border-green-200">
                         <div className="flex items-center gap-2 mb-3">
-                          <span className="text-lg">⚡</span>
+                          <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
                           <p className="text-sm font-semibold text-gray-700">Authorization Status</p>
                         </div>
                         <div className="flex items-center gap-3">
@@ -547,7 +556,7 @@ export default function Home() {
                                 <span className="text-green-700 font-bold">Active</span>
                               </div>
                               <span className="text-xs text-green-600 bg-green-100 px-3 py-1 rounded-full font-medium">
-                                ✓ Can auto-bridge
+                                Can auto-bridge
                               </span>
                             </>
                           ) : (
@@ -557,7 +566,7 @@ export default function Home() {
                                 <span className="text-orange-700 font-bold">Inactive</span>
                               </div>
                               <span className="text-xs text-orange-600 bg-orange-100 px-3 py-1 rounded-full font-medium">
-                                ⚠ Needs authorization
+                                Needs authorization
                               </span>
                             </>
                           )}
@@ -570,26 +579,34 @@ export default function Home() {
                       <button
                         onClick={() => {
                           window.open(
-                            `https://monad-testnet.socialscan.io/tx/${sessionAddress}`,
+                            `https://monad-testnet.socialscan.io/address/${sessionAddress}`,
                             '_blank'
                           );
                         }}
                         className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                       >
-                        🔍 View on Explorer
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        View on Explorer
                       </button>
                       <button
                         onClick={revokeSession}
                         className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
                       >
-                        🗑️ Revoke Session
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Revoke Session
                       </button>
                     </div>
 
                     {/* Info Box */}
                     <div className="p-4 bg-blue-50 border-l-4 border-blue-400 rounded-lg">
                       <div className="flex gap-3">
-                        <span className="text-xl">ℹ️</span>
+                        <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                         <div>
                           <p className="font-semibold text-blue-900 mb-1">About Your Smart Account</p>
                           <p className="text-sm text-blue-800">
@@ -603,26 +620,36 @@ export default function Home() {
                 ) : (
                   <div className="space-y-4">
                     {/* First-Time User Card */}
-                    <div className="p-6 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border-2 border-dashed border-purple-200">
+                    <div className="p-6 bg-blue-50 rounded-xl border border-blue-200">
                       <div className="text-center">
-                        <span className="text-4xl mb-3 block">🚀</span>
+                        <div className="w-16 h-16 mx-auto mb-4 bg-blue-500 rounded-full flex items-center justify-center">
+                          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                        </div>
                         <h4 className="text-lg font-bold text-gray-900 mb-2">
-                          Welcome to Automated Bridging!
+                          Welcome to Automated Bridging
                         </h4>
                         <p className="text-gray-600 mb-4">
                           Create a Smart Account session to enable automated bridging when gas fees spike.
                         </p>
                         <ul className="text-sm text-gray-600 space-y-2 text-left max-w-md mx-auto">
                           <li className="flex items-start gap-2">
-                            <span className="text-green-500 font-bold">✓</span>
-                            <span>Secured by MetaMask Delegation Toolkit</span>
+                            <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Secured by MetaMask Delegation</span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <span className="text-green-500 font-bold">✓</span>
+                            <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
                             <span>Works only on this device</span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <span className="text-green-500 font-bold">✓</span>
+                            <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
                             <span>Can be revoked anytime</span>
                           </li>
                         </ul>
@@ -632,9 +659,9 @@ export default function Home() {
                     <button
                       onClick={createSession}
                       disabled={sessionLoading}
-                      className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-xl hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-bold text-lg transition-all duration-200"
+                      className="w-full px-6 py-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg transition-all duration-200 shadow-md hover:shadow-lg"
                     >
-                      {sessionLoading ? '⏳ Creating Your Smart Account...' : '✨ Create Session Account'}
+                      {sessionLoading ? 'Creating Smart Account...' : 'Create Session Account'}
                     </button>
                   </div>
                 )}
@@ -642,10 +669,12 @@ export default function Home() {
 
               {/* Authorization Alert - Only show if session exists but not authorized */}
               {hasSession && !isAuthorized && (
-                <div className="p-5 border-2 border-orange-400 rounded-xl bg-gradient-to-r from-orange-50 to-yellow-50 mb-6 shadow-md">
+                <div className="p-5 border-2 border-orange-400 rounded-xl bg-orange-50 mb-6">
                   <div className="flex items-start gap-4">
-                    <div className="p-2 bg-orange-500 rounded-lg">
-                      <span className="text-2xl">⚠️</span>
+                    <div className="p-2 bg-orange-500 rounded-lg flex-shrink-0">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
                     </div>
                     <div className="flex-1">
                       <h3 className="font-bold text-lg mb-2 text-orange-900">
@@ -653,14 +682,14 @@ export default function Home() {
                       </h3>
                       <p className="text-sm text-orange-800 mb-4">
                         Your Smart Account needs on-chain authorization to bridge automatically.
-                        This is a one-time transaction that grants permission.
+                        This is a one-time transaction.
                       </p>
                       <button
                         onClick={handleAuthorizeSession}
                         disabled={isGrantingPermission}
-                        className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-bold transition-colors shadow-md hover:shadow-lg"
+                        className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-bold transition-colors"
                       >
-                        {isGrantingPermission ? '⏳ Authorizing...' : '🔑 Authorize Smart Account Now'}
+                        {isGrantingPermission ? 'Authorizing...' : 'Authorize Smart Account'}
                       </button>
                     </div>
                   </div>
@@ -669,10 +698,12 @@ export default function Home() {
 
               {/* Success Banner - After authorization */}
               {hasSession && isAuthorized && permissionsGranted && (
-                <div className="p-5 border-2 border-green-400 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 mb-6 shadow-md">
+                <div className="p-5 border-2 border-green-400 rounded-xl bg-green-50 mb-6">
                   <div className="flex items-start gap-4">
-                    <div className="p-2 bg-green-500 rounded-lg">
-                      <span className="text-2xl">✅</span>
+                    <div className="p-2 bg-green-500 rounded-lg flex-shrink-0">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
                     </div>
                     <div className="flex-1">
                       <h3 className="font-bold text-lg mb-2 text-green-900">
@@ -680,7 +711,7 @@ export default function Home() {
                       </h3>
                       <p className="text-sm text-green-800">
                         Your MetaMask Smart Account is authorized and ready to bridge automatically
-                        when gas exceeds your threshold. You can now sit back and relax!
+                        when gas exceeds your threshold.
                       </p>
                     </div>
                   </div>
@@ -700,7 +731,11 @@ export default function Home() {
           {!isConnected && (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
               <div className="p-8 bg-white rounded-2xl shadow-xl max-w-md">
-                <span className="text-6xl mb-4 block">🔌</span>
+                <div className="w-20 h-20 mx-auto mb-4 bg-blue-500 rounded-full flex items-center justify-center">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-3">
                   Connect Your Wallet
                 </h3>
@@ -709,7 +744,7 @@ export default function Home() {
                 </p>
                 <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <p className="text-sm text-blue-800">
-                    👆 Click the &quot;Connect Wallet&quot; button in the header to get started
+                    Click the "Connect Wallet" button in the header to get started
                   </p>
                 </div>
               </div>
