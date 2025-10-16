@@ -123,11 +123,6 @@ contract Agent {
     /**
      * @notice Authorize a session account to bridge on your behalf
      * @param _sessionAccount MetaMask Smart Account address
-     * 
-     * WHY?
-     * Session accounts enable automated bridging without requiring
-     * your approval signature every time. You grant permission once,
-     * the session account monitors gas and bridges automatically.
      */
     function authorizeSession(address _sessionAccount) external {
         require(_sessionAccount != address(0), "Invalid session address");
@@ -158,10 +153,6 @@ contract Agent {
     /**
      * @notice Mock gas oracle for testnet demo
      * @dev Returns fixed 15 gwei to simulate "cheap gas" scenario
-     * 
-     * PRODUCTION: Replace with real Chainlink oracle call:
-     * (, int256 answer, , ,) = GAS_ORACLE.latestRoundData();
-     * return uint256(answer) / 1e9; // Convert to gwei
      */
     function getMockGas() internal pure returns (uint256) {
         return 15;  // Low gas price to trigger bridge in demo
@@ -178,15 +169,11 @@ contract Agent {
      * - Current gas = 15 gwei (what mock returns)
      * - Since 15 < 50 → shouldTrigger = TRUE
      * - This means: "Gas is cheap enough, bridge now!"
-     * 
-     * ⚠️ KEY FIX: Changed from currentGas > threshold to currentGas < threshold
-     * Because we want to bridge when gas is CHEAP, not expensive!
      */
     function checkGas(address _user) external view returns (uint256 currentGasGwei, bool shouldTrigger) {
         currentGasGwei = getMockGas(); 
         
         uint256 userThreshold = gasThresholds[_user];
-        // ✅ CORRECTED LOGIC: Bridge when gas is BELOW threshold
         shouldTrigger = (userThreshold > 0) && (currentGasGwei < userThreshold);
     }
     

@@ -241,7 +241,7 @@ contract MonadReceiver {
     /**
      * @notice Update mock price (in case you want to demo price changes)
      * @dev NOT IMPLEMENTED - price is constant for simplicity
-     * In production, you'd fetch from Chainlink oracle
+     * In production, fetch from Chainlink oracle
      */
     
     /**
@@ -259,35 +259,9 @@ contract MonadReceiver {
 
 /**
  * @dev Origin struct for LayerZero V2
- * Used in lzReceive function
  */
 struct Origin {
     uint32 srcEid;      // Source endpoint ID
     bytes32 sender;     // Sender address (bytes32)
     uint64 nonce;       // Message nonce
 }
-
-/**
- * ============================================
- * 📝 DEPLOYMENT NOTES
- * ============================================
- * 
- * 1. Deploy with Monad LayerZero Endpoint:
- *    constructor(0xFdB631F5EE196F0a101F2B928F4A3Cfc1f57A8a4)
- * 
- * 2. After deployment, verify on explorer:
- *    https://monad-testnet.socialscan.io
- * 
- * 3. Tell Agent contract about this receiver:
- *    Agent.setPeer(40204, addressToBytes32(receiver))
- * 
- * 4. Test the flow:
- *    - Bridge from Base → Monad
- *    - Check USDC balance: getUSDCBalance(user)
- *    - Should show: ethAmount * 2000 (in 6 decimals)
- * 
- * 5. In demo video, explain:
- *    "This simulates Uniswap using a fixed $2000/ETH price.
- *    The real version would call Uniswap V2 Router for
- *    live market prices and actual token swaps."
- */

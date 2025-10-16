@@ -183,7 +183,7 @@ export default function Home() {
       setStatus(`Threshold set! Tx: ${hash}`);
       // Refresh gas data after setting threshold
       setTimeout(() => refetchGas(), 2000);
-    } catch (error: unknown) { // Fix: Use unknown instead of any
+    } catch (error: unknown) { 
       setStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
@@ -346,7 +346,7 @@ export default function Home() {
     }
 
     try {
-      setStatus('💰 Depositing funds...');
+      setStatus('Depositing funds...');
 
       const hash = await walletClient.writeContract({
         address: agentAddress,
@@ -374,9 +374,8 @@ export default function Home() {
     }
   };
 
-  // Debug: Log deposit balance
   useEffect(() => {
-    console.log('💰 Deposit Balance Debug:', {
+    console.log('Deposit Balance Debug:', {
       raw: depositBalance,
       formatted: depositBalance ? (Number(depositBalance) / 1e18).toFixed(4) : '0',
       isGreaterThanZero: depositBalance ? Number(depositBalance) > 0 : false
@@ -386,17 +385,17 @@ export default function Home() {
   // Handle withdraw
   const handleWithdraw = async () => {
     if (!walletClient || !address) {
-      setStatus('❌ Wallet not connected');
+      setStatus('Wallet not connected');
       return;
     }
 
     if (!depositBalance || depositBalance === BigInt(0)) {
-      setStatus('❌ No funds to withdraw');
+      setStatus('No funds to withdraw');
       return;
     }
 
     try {
-      setStatus('💸 Withdrawing funds...');
+      setStatus('Withdrawing funds...');
 
       const hash = await walletClient.writeContract({
         address: agentAddress,
@@ -414,7 +413,7 @@ export default function Home() {
       // Also refresh after 2 seconds
       setTimeout(() => {
         refetchDeposit();
-        console.log('🔄 Deposit balance refreshed');
+        console.log('Deposit balance refreshed');
       }, 2000);
 
     } catch (error: unknown) {
