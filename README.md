@@ -5,7 +5,7 @@
 
 ## Project Description
 
-FeeDelegate Bridge is an on-chain automation tool built for the MetaMask Smart Accounts x Monad Dev Cook-Off hackathon (Best On-Chain Automation track). It uses MetaMask's Delegation Toolkit to automate bridging user assets to low-fee chains (e.g., Monad) when gas fees on the source chain exceed a threshold. This solves multi-chain UX pains by reducing costs and approval fatigue, leveraging ERC-4337 smart accounts for secure, permissioned executions.
+FeeDelegate Bridge is an on-chain automation tool built for the MetaMask Smart Accounts x Monad Dev Cook-Off hackathon (Best On-Chain Automation track). It uses MetaMask's Delegation Toolkit to automate bridging user assets to low-fee chains (e.g., Monad) when gas fees on the source chain goes below a threshold. This solves multi-chain UX pains by reducing costs and approval fatigue, leveraging ERC-4337 smart accounts for secure, permissioned executions.
 
 Key Features:
 - User-defined gas thresholds for auto-bridging.
