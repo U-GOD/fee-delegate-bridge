@@ -202,9 +202,6 @@ contract Agent {
      * 5. Deduct 0.1 ETH from user's deposit
      * 6. Send cross-chain message to Monad
      * 7. Refund any excess LZ fees to session account
-     * 
-     * CALLED BY: Session account (automated) or user (manual)
-     * REQUIRES: msg.value = LayerZero fee (~0.01 ETH)
      */
     function checkGasAndBridge(address _user) external payable { 
         // Step 1: Verify gas is cheap enough

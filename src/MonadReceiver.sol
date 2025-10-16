@@ -2,98 +2,94 @@
 pragma solidity ^0.8.20;
 
 import {IEndpointV2} from "./interfaces/IEndpointV2.sol";
-import {IUniswapV2Router} from "./interfaces/IUniswapV2Router.sol";
 
 /**
- * @title MonadReceiver - Automated Swap Executor on Monad
- * @notice Receives bridged funds and executes Uniswap swaps automatically
- * @dev Deploy this contract ON MONAD TESTNET
- * 
- * FLOW:
- * 1. Agent.sol (Base Sepolia) sends LayerZero message
- * 2. LayerZero delivers to this contract on Monad
- * 3. lzReceive() decodes message
- * 4. Executes Uniswap swap (ETH → USDC)
- * 5. Credits user's balance
- * 
- * WHY THIS IS GENIUS:
- * - Bridge when Base gas is cheap
- * - Swap on Monad (ultra-low fees, 10k TPS)
- * - User saves money on BOTH bridge AND swap!
- * - Fully automated via MetaMask Smart Accounts
+ * @title MonadReceiver - MOCK VERSION for Hackathon
+ * @notice Receives bridged funds and SIMULATES Uniswap swap
+ * @dev Deploy this if you can't find Uniswap addresses on Monad
  */
 contract MonadReceiver {
     // ============ STATE VARIABLES ============
     
     address public owner;
     IEndpointV2 public immutable ENDPOINT;
-    IUniswapV2Router public immutable UNISWAP_ROUTER;
     
-    // Token addresses on Monad (from Uniswap deployment)
-    address public constant WETH = 0x...; // TODO: Get from Monad Uniswap
-    address public constant USDC = 0x...; // TODO: Get from Monad Uniswap
+    // Mock price: 1 ETH = 2000 USDC (6 decimals)
+    uint256 public constant MOCK_ETH_PRICE = 2000;
+    uint256 public constant USDC_DECIMALS = 6;
     
-    // User balances after swap
+    // User balances in mock USDC (6 decimals)
     mapping(address => uint256) public usdcBalances;
+    
+    // Track ETH held for users (for withdrawal)
+    mapping(address => uint256) public ethBalances;
     
     // Authorized source chains (Base Sepolia EID)
     mapping(uint32 => bool) public trustedSources;
+    
+    // Total mock USDC supply (for accounting)
+    uint256 public totalMockUSDC;
     
     // ============ EVENTS ============
     
     event BridgeReceived(
         address indexed user,
-        uint256 amount,
-        uint32 srcEid
+        uint256 ethAmount,
+        uint32 srcEid,
+        uint256 timestamp
     );
     
-    event SwapExecuted(
+    event MockSwapExecuted(
         address indexed user,
         uint256 ethIn,
-        uint256 usdcOut
+        uint256 usdcOut,
+        uint256 mockPrice
     );
     
     event BalanceWithdrawn(
         address indexed user,
-        uint256 amount
+        uint256 usdcAmount,
+        uint256 ethAmount
     );
     
     // ============ CONSTRUCTOR ============
     
     /**
      * @notice Deploy on Monad Testnet
-     * @param _endpoint LayerZero Endpoint on Monad: 0xFdB631F5EE196F0a101F2B928F4A3Cfc1f57A8a4
-     * @param _uniswapRouter Uniswap V2 Router on Monad (get from testnet.monad.xyz)
+     * @param _endpoint LayerZero Endpoint on Monad
+     * 
+     * Monad LayerZero Endpoint: 0xFdB631F5EE196F0a101F2B928F4A3Cfc1f57A8a4
      */
-    constructor(address _endpoint, address _uniswapRouter) {
+    constructor(address _endpoint) {
         owner = msg.sender;
         ENDPOINT = IEndpointV2(_endpoint);
-        UNISWAP_ROUTER = IUniswapV2Router(_uniswapRouter);
         
         // Trust Base Sepolia (EID 40245)
         trustedSources[40245] = true;
     }
     
-    // ============ RECEIVE BRIDGE & SWAP ============
+    // ============ RECEIVE BRIDGE & MOCK SWAP ============
     
     /**
      * @notice Called by LayerZero when message arrives from Base
      * @param _origin Source chain info
      * @param _guid Unique message ID
-     * @param _message Encoded: (user, amount, action)
+     * @param _message Encoded: (user, amount, timestamp, action)
      * @param _executor Executor address (unused)
      * @param _extraData Extra data (unused)
      * 
-     * SECURITY:
-     * - Only LayerZero Endpoint can call
-     * - Only trusted source chains accepted
-     * - Validates message structure
+     * FLOW:
+     * 1. Validate sender is LayerZero Endpoint
+     * 2. Validate source is trusted (Base Sepolia)
+     * 3. Decode message to get user + ETH amount
+     * 4. Execute MOCK swap (ETH → USDC)
+     * 5. Credit user's USDC balance
+     * 6. Hold ETH for potential withdrawal
      * 
-     * AUTO-EXECUTION:
-     * 1. Decode message → get user + amount
-     * 2. Execute Uniswap swap: ETH → USDC
-     * 3. Credit user's USDC balance
-     * 4. Emit events for frontend tracking
+     * MOCK SWAP LOGIC:
+     * - Use fixed price: 1 ETH = $2000
+     * - Convert ETH (18 decimals) to USDC (6 decimals)
+     * - Example: 0.1 ETH → 200 USDC
      */
     function lzReceive(
         Origin calldata _origin,
@@ -108,105 +104,127 @@ contract MonadReceiver {
         // Only accept from trusted chains (Base Sepolia)
         require(trustedSources[_origin.srcEid], "Untrusted source");
         
-        // Decode message
+        // Decode message from Agent.sol
         (
             address user,
-            uint256 amount,
+            uint256 ethAmount,
             uint256 timestamp,
             string memory action
         ) = abi.decode(_message, (address, uint256, uint256, string));
         
-        emit BridgeReceived(user, amount, _origin.srcEid);
+        emit BridgeReceived(user, ethAmount, _origin.srcEid, timestamp);
         
-        // Validate action
+        // Validate action type
         require(
             keccak256(bytes(action)) == keccak256("BRIDGE_TO_MONAD"),
             "Invalid action"
         );
         
-        // Execute swap on Uniswap
-        _executeSwap(user, amount);
+        // Execute MOCK swap
+        _executeMockSwap(user, ethAmount);
     }
     
     /**
-     * @notice Internal swap execution on Uniswap V2
+     * @notice MOCK swap execution (simulates Uniswap)
      * @param _user User who will receive USDC
-     * @param _ethAmount ETH amount to swap
+     * @param _ethAmount ETH amount to "swap"
      * 
-     * SWAP PATH: WETH → USDC
-     * SLIPPAGE: 5% (adjust based on liquidity)
-     * DEADLINE: 5 minutes from now
+     * MATH EXPLANATION:
+     * 1. ETH has 18 decimals (1 ETH = 1e18 wei)
+     * 2. USDC has 6 decimals (1 USDC = 1e6)
+     * 3. Price: 1 ETH = $2000
      * 
-     * NOTE: Contract must have ETH balance to swap!
-     * ETH comes from LayerZero bridge delivery
+     * CONVERSION FORMULA:
+     * usdcOut = (ethAmount * PRICE * 10^6) / 10^18
+     * usdcOut = (ethAmount * 2000 * 1e6) / 1e18
+     * 
+     * EXAMPLE:
+     * Input: 0.1 ETH = 100000000000000000 wei
+     * Calc: (100000000000000000 * 2000 * 1e6) / 1e18
+     *     = 200 * 1e6
+     *     = 200000000 (200 USDC in 6 decimals)
      */
-    function _executeSwap(address _user, uint256 _ethAmount) internal {
-        // Build swap path: ETH → USDC
-        address[] memory path = new address[](2);
-        path[0] = WETH;
-        path[1] = USDC;
+    function _executeMockSwap(address _user, uint256 _ethAmount) internal {
+        // Calculate mock USDC output (6 decimals)
+        // Formula: (ethAmount * price * 10^6) / 10^18
+        uint256 usdcOut = (_ethAmount * MOCK_ETH_PRICE * (10 ** USDC_DECIMALS)) / (10 ** 18);
         
-        // Calculate minimum output (5% slippage)
-        // In production, get live price from oracle
-        uint256[] memory expectedAmounts = UNISWAP_ROUTER.getAmountsOut(
-            _ethAmount,
-            path
-        );
-        uint256 minUsdcOut = (expectedAmounts[1] * 95) / 100; // 5% slippage
+        // Credit user's mock USDC balance
+        usdcBalances[_user] += usdcOut;
         
-        // Execute swap
-        uint256[] memory amounts = UNISWAP_ROUTER.swapExactETHForTokens{
-            value: _ethAmount
-        }(
-            minUsdcOut,
-            path,
-            address(this), // Receive USDC to contract
-            block.timestamp + 300 // 5 min deadline
-        );
+        // Store ETH for user (they can withdraw later)
+        ethBalances[_user] += _ethAmount;
         
-        // Credit user's USDC balance
-        usdcBalances[_user] += amounts[1];
+        // Track total mock USDC (for accounting)
+        totalMockUSDC += usdcOut;
         
-        emit SwapExecuted(_user, _ethAmount, amounts[1]);
+        emit MockSwapExecuted(_user, _ethAmount, usdcOut, MOCK_ETH_PRICE);
     }
     
     // ============ USER FUNCTIONS ============
     
     /**
-     * @notice Withdraw your USDC balance
-     * @param _amount USDC amount to withdraw
+     * @notice Withdraw your mock USDC balance
+     * @param _usdcAmount USDC amount to withdraw (6 decimals)
      * 
-     * USE CASE:
-     * After auto-swap completes, user calls this to get their USDC
-     * Can then use USDC in other Monad DeFi protocols
+     * HOW IT WORKS:
+     * - User has mock USDC balance from "swap"
+     * - We convert USDC back to ETH at same price
+     * - Transfer ETH to user
+     * 
+     * CONVERSION:
+     * ethOut = (usdcAmount * 10^18) / (price * 10^6)
+     * 
+     * EXAMPLE:
+     * Input: 200 USDC = 200000000 (6 decimals)
+     * Calc: (200000000 * 1e18) / (2000 * 1e6)
+     *     = 100000000000000000 wei
+     *     = 0.1 ETH
      */
-    function withdrawUSDC(uint256 _amount) external {
-        require(usdcBalances[msg.sender] >= _amount, "Insufficient balance");
+    function withdrawUSDC(uint256 _usdcAmount) external {
+        require(_usdcAmount > 0, "Must withdraw something");
+        require(usdcBalances[msg.sender] >= _usdcAmount, "Insufficient USDC balance");
         
-        usdcBalances[msg.sender] -= _amount;
+        // Calculate ETH to return
+        uint256 ethToReturn = (_usdcAmount * (10 ** 18)) / (MOCK_ETH_PRICE * (10 ** USDC_DECIMALS));
+        require(ethBalances[msg.sender] >= ethToReturn, "Insufficient ETH backing");
         
-        // Transfer USDC to user
-        // NOTE: Need to approve/transfer ERC20 here
-        // Simplified for MVP - in production add IERC20 interface
-        (bool success, ) = USDC.call(
-            abi.encodeWithSignature(
-                "transfer(address,uint256)",
-                msg.sender,
-                _amount
-            )
-        );
-        require(success, "USDC transfer failed");
+        // Deduct balances
+        usdcBalances[msg.sender] -= _usdcAmount;
+        ethBalances[msg.sender] -= ethToReturn;
+        totalMockUSDC -= _usdcAmount;
         
-        emit BalanceWithdrawn(msg.sender, _amount);
+        // Transfer ETH to user
+        (bool success, ) = payable(msg.sender).call{value: ethToReturn}("");
+        require(success, "ETH transfer failed");
+        
+        emit BalanceWithdrawn(msg.sender, _usdcAmount, ethToReturn);
     }
     
     /**
-     * @notice Check your USDC balance
+     * @notice Check your mock USDC balance
      * @param _user User address
-     * @return USDC balance in contract
+     * @return USDC balance (6 decimals)
      */
     function getUSDCBalance(address _user) external view returns (uint256) {
         return usdcBalances[_user];
+    }
+    
+    /**
+     * @notice Check your ETH backing
+     * @param _user User address
+     * @return ETH balance held for user
+     */
+    function getETHBalance(address _user) external view returns (uint256) {
+        return ethBalances[_user];
+    }
+    
+    /**
+     * @notice Get current mock price
+     * @return Price in USD (2 decimals)
+     */
+    function getMockPrice() external pure returns (uint256) {
+        return MOCK_ETH_PRICE;
     }
     
     // ============ ADMIN FUNCTIONS ============
@@ -221,6 +239,12 @@ contract MonadReceiver {
     }
     
     /**
+     * @notice Update mock price (in case you want to demo price changes)
+     * @dev NOT IMPLEMENTED - price is constant for simplicity
+     * In production, you'd fetch from Chainlink oracle
+     */
+    
+    /**
      * @notice Emergency withdraw (owner only)
      * @dev In case funds get stuck
      */
@@ -229,7 +253,7 @@ contract MonadReceiver {
         payable(owner).transfer(address(this).balance);
     }
     
-    // Receive ETH from LayerZero/Uniswap
+    // Receive ETH from LayerZero/users
     receive() external payable {}
 }
 
@@ -238,7 +262,32 @@ contract MonadReceiver {
  * Used in lzReceive function
  */
 struct Origin {
-    uint32 srcEid;
-    bytes32 sender;
-    uint64 nonce;
+    uint32 srcEid;      // Source endpoint ID
+    bytes32 sender;     // Sender address (bytes32)
+    uint64 nonce;       // Message nonce
 }
+
+/**
+ * ============================================
+ * 📝 DEPLOYMENT NOTES
+ * ============================================
+ * 
+ * 1. Deploy with Monad LayerZero Endpoint:
+ *    constructor(0xFdB631F5EE196F0a101F2B928F4A3Cfc1f57A8a4)
+ * 
+ * 2. After deployment, verify on explorer:
+ *    https://monad-testnet.socialscan.io
+ * 
+ * 3. Tell Agent contract about this receiver:
+ *    Agent.setPeer(40204, addressToBytes32(receiver))
+ * 
+ * 4. Test the flow:
+ *    - Bridge from Base → Monad
+ *    - Check USDC balance: getUSDCBalance(user)
+ *    - Should show: ethAmount * 2000 (in 6 decimals)
+ * 
+ * 5. In demo video, explain:
+ *    "This simulates Uniswap using a fixed $2000/ETH price.
+ *    The real version would call Uniswap V2 Router for
+ *    live market prices and actual token swaps."
+ */
