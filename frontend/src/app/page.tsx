@@ -447,7 +447,7 @@ export default function Home() {
                 Gas Fee Monitor & Auto-Bridge
               </h2>
               <p className="text-gray-600 text-lg max-w-2xl mx-auto mb-6">
-                Follow the steps below to set up automated cross-chain bridging.
+                Save on gas fees! Deposit on Base Sepolia, set your threshold, and automatically bridge to Monad when Base gas is cheap. Your funds will be swapped to USDC on Monad.
               </p>
 
               {/* Progress Indicator */}
@@ -499,6 +499,40 @@ export default function Home() {
             </div>
           )}
 
+          {/* Chain Flow Explanation */}
+          <div className="bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl shadow-xl p-6 mb-6 text-white">
+            <h3 className="text-2xl font-bold mb-4">How It Works: Cross-Chain Gas Optimization</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-3 bg-white rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <h4 className="font-bold mb-2">1. Deposit on Base Sepolia</h4>
+                <p className="text-sm text-blue-100">High gas fees, but you deposit when YOU choose</p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-3 bg-white rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h4 className="font-bold mb-2">2. Auto-Bridge When Cheap</h4>
+                <p className="text-sm text-blue-100">Agent monitors gas, bridges when Base fees drop below your threshold</p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-3 bg-white rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h4 className="font-bold mb-2">3. Receive USDC on Monad</h4>
+                <p className="text-sm text-blue-100">Low gas, auto-swapped to USDC at $2000/ETH</p>
+              </div>
+            </div>
+          </div>
+
           {isConnected && (
             <div className="space-y-6">
               
@@ -509,8 +543,8 @@ export default function Home() {
                     1
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">Deposit Funds</h3>
-                    <p className="text-sm text-gray-500">Add MON tokens for bridge operations</p>
+                    <h3 className="text-xl font-bold text-gray-900">Deposit Funds on Base Sepolia</h3>
+                    <p className="text-sm text-gray-500">Deposit ETH that will be bridged to Monad when gas is cheap</p>
                   </div>
                 </div>
 
@@ -523,7 +557,7 @@ export default function Home() {
                           ? `${(Number(depositBalance) / 1e18).toFixed(4)}` 
                           : '0.0000'}
                       </p>
-                      <p className="text-xs text-gray-500">MON</p>
+                      <p className="text-xs text-gray-500">ETH (Base Sepolia)</p>
                     </div>
                   </div>
 
@@ -554,7 +588,7 @@ export default function Home() {
                           onClick={() => setDepositAmount(amount)}
                           className="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 text-sm font-medium transition-colors"
                         >
-                          {amount} MON
+                          {amount} ETH
                         </button>
                       ))}
                     </div>
@@ -572,7 +606,7 @@ export default function Home() {
 
                   <div className="mt-3 p-3 bg-blue-100 rounded-lg">
                     <p className="text-xs text-blue-800">
-                      <strong>Note:</strong> Each bridge operation costs 0.1 MON. Make sure to deposit enough for multiple bridges.
+                      <strong>Note:</strong> Each bridge transfers 0.1 ETH from Base to Monad. Deposit enough for multiple automated bridges. Plus gas fees for LayerZero (~0.01 ETH per bridge).
                     </p>
                   </div>
                 </div>
@@ -613,7 +647,7 @@ export default function Home() {
                   {threshold && (
                     <div className="mt-3 p-3 bg-green-100 rounded-lg">
                       <p className="text-sm text-green-800">
-                        <strong>Active threshold:</strong> Bridge will trigger when gas exceeds {threshold} Gwei
+                        <strong>Active threshold:</strong> Bridge will trigger when Base Sepolia gas drops below {threshold} Gwei (cheaper gas = bridge now!)
                       </p>
                     </div>
                   )}
@@ -741,7 +775,7 @@ export default function Home() {
                         <div className="flex-1 p-3 bg-green-100 rounded-lg text-center">
                           <p className="text-sm text-green-700 font-medium">Balance</p>
                           <p className="text-lg font-bold text-green-900">
-                            {depositBalance ? `${(Number(depositBalance) / 1e18).toFixed(4)} MON` : '0 MON'}
+                            {depositBalance ? `${(Number(depositBalance) / 1e18).toFixed(4)} ETH` : '0 ETH'}
                           </p>
                         </div>
                         <div className="flex-1 p-3 bg-green-100 rounded-lg text-center">
@@ -782,8 +816,8 @@ export default function Home() {
                       </button>
                       <p className="text-sm text-gray-500 mt-3 text-center">
                         {shouldTrigger 
-                          ? 'Gas price is above threshold - you can bridge manually' 
-                          : 'Bridge will trigger automatically when conditions are met'}
+                          ? 'Base gas is below your threshold - cheap to bridge now!' 
+                          : `Waiting for Base gas to drop below ${threshold} Gwei`}
                       </p>
                     </div>
                   </div>
