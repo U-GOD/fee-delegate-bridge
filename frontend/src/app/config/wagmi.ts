@@ -23,13 +23,35 @@ export const monadTestnet = defineChain({
   }
 });
 
-// Wagmi config
+// Define Base Sepolia testnet chain
+export const baseSepoliaTestnet = defineChain({
+  id: 84532,
+  name: 'Base Sepolia',
+  rpcUrls: { 
+    default: { 
+      http: ['https://sepolia.base.org'] 
+    } 
+  },
+  nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
+  blockExplorers: {
+    default: {
+      name: 'BaseScan',
+      url: 'https://sepolia.basescan.org'
+    }
+  },
+  testnet: true
+});
+
+// Wagmi config with BOTH chains
 export const config = createConfig({
-  chains: [monadTestnet],
+  chains: [monadTestnet, baseSepoliaTestnet],
   connectors: [injected()],
   transports: { 
     [monadTestnet.id]: http('https://testnet-rpc.monad.xyz', {
       timeout: 30_000 // 30 second timeout
+    }),
+    [baseSepoliaTestnet.id]: http('https://sepolia.base.org', {
+      timeout: 30_000
     })
   },
   ssr: true,
