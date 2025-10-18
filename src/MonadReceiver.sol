@@ -5,8 +5,7 @@ import {IEndpointV2} from "./interfaces/IEndpointV2.sol";
 
 /**
  * @title MonadReceiver - MOCK VERSION for Hackathon
- * @notice Receives bridged funds and SIMULATES Uniswap swap
- * @dev Deploy this if you can't find Uniswap addresses on Monad
+ * @notice Receives bridged funds and SIMULATES DEX swap
  */
 contract MonadReceiver {
     // ============ STATE VARIABLES ============
