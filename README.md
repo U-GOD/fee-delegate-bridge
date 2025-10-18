@@ -19,7 +19,14 @@ This is a monorepo with:
 
 ## Deployments
 
-Monad testnet Agent: 0x4Ba57f31431CFAe7C6e67eD91116CDAFCD3883Af (tx: 0x4612b30c99abc22d9d905ccf897afa8a3c379283d6cc643b19ceae96fd9f67c5)
+## Deployments
+
+**Base Sepolia:**
+- Agent: `0x7FbaAA1E70a7D4Efcc0554BDa5416FEAAcacD4A1`
+
+**Monad Testnet:**
+- MonadReceiver: `0x7490D3B9C22698bEfeEAf2efCC4fA78ffff96e77`
+- LimitOrderAgent: `0x7FbaAA1E70a7D4Efcc0554BDa5416FEAAcacD4A1`
 
 ## Prerequisites
 
