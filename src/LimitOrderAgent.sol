@@ -6,20 +6,10 @@ pragma solidity ^0.8.20;
  * @notice Executes swaps on behalf of users when price conditions are met
  * @dev Mock DEX integration for testnet demo (production-ready architecture)
  * 
- * 🎯 HACKATHON STRATEGY:
  * - DEX integration is MOCKED for demo (Ambient not on Monad testnet yet)
  * - ALL automation logic is REAL and production-ready
  * - Architecture demonstrates limit order automation concept
  * - Can easily swap in real DEX integration for mainnet
- * 
- * 🏆 WHY THIS WINS:
- * Judges care about:
- * ✅ MetaMask Smart Account sessions
- * ✅ Automated limit order execution logic
- * ✅ Secure permission management
- * ✅ Production-ready architecture
- * 
- * NOT about which specific DEX you integrate with!
  */
 contract LimitOrderAgent {
     // ============ STRUCTS ============
