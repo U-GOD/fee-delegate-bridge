@@ -227,65 +227,65 @@ export default function Home() {
     },
   });
 
-  const handleBridgeWithFee = async () => {
-    if (!address || !shouldTrigger) {
-      setStatus('❌ Bridge conditions not met');
-      return;
-    }
+  // const handleBridgeWithFee = async () => {
+  //   if (!address || !shouldTrigger) {
+  //     setStatus('❌ Bridge conditions not met');
+  //     return;
+  //   }
 
-    if (!smartAccount || !sessionAddress) {
-      setStatus('❌ No Smart Account - create session first');
-      return;
-    }
+  //   if (!smartAccount || !sessionAddress) {
+  //     setStatus('❌ No Smart Account - create session first');
+  //     return;
+  //   }
 
-    try {
-      setStatus('🚀 Preparing bridge via Smart Account...');
+  //   try {
+  //     setStatus('🚀 Preparing bridge via Smart Account...');
       
-      const bundlerClient = getBundlerClient();
-      if (!bundlerClient) {
-        throw new Error('Bundler client not available');
-      }
+  //     const bundlerClient = getBundlerClient();
+  //     if (!bundlerClient) {
+  //       throw new Error('Bundler client not available');
+  //     }
 
-      // Encode the bridge function call
-      const bridgeCallData = encodeFunctionData({
-        abi: agentAbi,
-        functionName: 'checkGasAndBridge',
-        args: [address],
-      });
+  //     // Encode the bridge function call
+  //     const bridgeCallData = encodeFunctionData({
+  //       abi: agentAbi,
+  //       functionName: 'checkGasAndBridge',
+  //       args: [address],
+  //     });
 
-      console.log('📦 Sending user operation via Smart Account...');
-      console.log('Smart Account:', sessionAddress);
-      console.log('Target Contract:', agentAddress);
+  //     console.log('📦 Sending user operation via Smart Account...');
+  //     console.log('Smart Account:', sessionAddress);
+  //     console.log('Target Contract:', agentAddress);
 
-      // Send user operation via bundler
-      const userOpHash = await bundlerClient.sendUserOperation({
-        account: smartAccount,
-        calls: [{
-          to: agentAddress,
-          value: parseEther('0.01'), // 0.01 MON for LZ fee
-          data: bridgeCallData,
-        }],
-        maxFeePerGas: BigInt(10 ** 9), // 1 gwei
-        maxPriorityFeePerGas: BigInt(10 ** 9), // 1 gwei
-      });
+  //     // Send user operation via bundler
+  //     const userOpHash = await bundlerClient.sendUserOperation({
+  //       account: smartAccount,
+  //       calls: [{
+  //         to: agentAddress,
+  //         value: parseEther('0.01'), // 0.01 MON for LZ fee
+  //         data: bridgeCallData,
+  //       }],
+  //       maxFeePerGas: BigInt(10 ** 9), // 1 gwei
+  //       maxPriorityFeePerGas: BigInt(10 ** 9), // 1 gwei
+  //     });
 
-      setStatus(`✅ Bridge initiated! UserOp: ${userOpHash.substring(0, 10)}...`);
-      console.log('✅ User Operation Hash:', userOpHash);
+  //     setStatus(`✅ Bridge initiated! UserOp: ${userOpHash.substring(0, 10)}...`);
+  //     console.log('✅ User Operation Hash:', userOpHash);
 
-      // Wait for receipt
-      setStatus('⏳ Waiting for confirmation...');
-      const receipt = await bundlerClient.waitForUserOperationReceipt({
-        hash: userOpHash,
-      });
+  //     // Wait for receipt
+  //     setStatus('⏳ Waiting for confirmation...');
+  //     const receipt = await bundlerClient.waitForUserOperationReceipt({
+  //       hash: userOpHash,
+  //     });
 
-      setStatus(`✅ Bridge complete! Tx: ${receipt.receipt.transactionHash.substring(0, 10)}...`);
-      console.log('✅ Transaction Receipt:', receipt);
+  //     setStatus(`✅ Bridge complete! Tx: ${receipt.receipt.transactionHash.substring(0, 10)}...`);
+  //     console.log('✅ Transaction Receipt:', receipt);
 
-    } catch (error: unknown) {
-      console.error('❌ Bridge error:', error);
-      setStatus(`❌ Bridge failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  };
+  //   } catch (error: unknown) {
+  //     console.error('❌ Bridge error:', error);
+  //     setStatus(`❌ Bridge failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  //   }
+  // };
 
   /**
   * Grant ERC-7715 permissions to session account
@@ -793,34 +793,13 @@ export default function Home() {
 
               {/* Gas Monitor (Show when authorized) */}
               {hasSession && isAuthorized && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2">
-                    <GasMonitor
-                      isLoading={gasLoading}
-                      error={gasError}
-                      currentGas={Number(currentGas)}
-                      threshold={threshold}
-                      shouldTrigger={shouldTrigger}
-                    />
-                  </div>
-                  <div className="lg:col-span-1">
-                    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 h-full">
-                      <h3 className="text-xl font-bold text-gray-900 mb-4">Bridge Control</h3>
-                      <button
-                        onClick={handleBridgeWithFee}
-                        disabled={!shouldTrigger || isPending}
-                        className="w-full px-6 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-bold text-lg shadow-md hover:shadow-lg disabled:shadow-none transition-all duration-200"
-                      >
-                        {isPending ? 'Bridging...' : shouldTrigger ? 'Bridge Now' : 'Waiting for Trigger'}
-                      </button>
-                      <p className="text-sm text-gray-500 mt-3 text-center">
-                        {shouldTrigger 
-                          ? 'Base gas is below your threshold - cheap to bridge now!' 
-                          : `Waiting for Base gas to drop below ${threshold} Gwei`}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <GasMonitor
+                  isLoading={gasLoading}
+                  error={gasError}
+                  currentGas={Number(currentGas)}
+                  threshold={threshold}
+                  shouldTrigger={shouldTrigger}
+                />
               )}
 
               {/* Session Details (Show when session exists) */}
