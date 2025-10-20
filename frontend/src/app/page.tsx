@@ -45,7 +45,7 @@ export default function Home() {
     }
   }, []);
 
-  const agentAddress = '0x7FbaAA1E70a7D4Efcc0554BDa5416FEAAcacD4A1'; // Base Sepolia
+  const agentAddress = '0x491F1f797ccD3e0fF9C598e567855f7DEc9dc8A7'; // Base Sepolia
 
   const agentAbi = [
     {
