@@ -838,7 +838,7 @@ export default function Home() {
                   </div>
                   <div className="flex gap-3 mt-4">
                     <button
-                      onClick={() => window.open(`https://testnet.monadexplorer.com/address/${sessionAddress}`, '_blank')}
+                      onClick={() => window.open(`https://sepolia.basescan.org/address/${sessionAddress}`, '_blank')}
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
