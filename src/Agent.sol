@@ -30,6 +30,19 @@ contract Agent {
     
     // Peer contract on destination chain (MonadReceiver address)
     mapping(uint32 => bytes32) public peers;
+
+    /**
+     * @notice Set peer contract on destination chain
+     * @param _dstEid Destination chain endpoint ID
+     * @param _peer Peer contract address (MonadReceiver)
+     * 
+     * MUST BE CALLED after deploying MonadReceiver.sol
+     */
+    function setPeer(uint32 _dstEid, bytes32 _peer) external {
+        require(msg.sender == owner, "Only owner");
+        require(_peer != bytes32(0), "Invalid peer address");
+        peers[_dstEid] = _peer;
+    }
     
     // User configurations
     mapping(address => uint256) public gasThresholds;      // User's max acceptable gas price
@@ -212,8 +225,13 @@ contract Agent {
             block.timestamp,            // Timestamp for tracking
             "BRIDGE_TO_MONAD"          // Action identifier
         );
-        bytes memory options = "";      // Default LZ options
-        
+
+        // Build LayerZero options with gas limit
+        bytes memory options = abi.encodePacked(
+            uint16(3),      // Version 3
+            uint256(200000) // Gas limit for lzReceive on destination
+        );
+
         // Get fee quote from LayerZero
         (uint256 nativeFee, ) = ENDPOINT.quote(DESTINATION_EID, message, false, options);
         require(msg.value >= nativeFee, "Insufficient LZ fee");

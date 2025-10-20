@@ -25,6 +25,9 @@ contract MonadReceiver {
     
     // Authorized source chains (Base Sepolia EID)
     mapping(uint32 => bool) public trustedSources;
+
+    // SECURITY: Authorized sender contracts per chain (peer validation)
+    mapping(uint32 => bytes32) public peers; 
     
     // Total mock USDC supply (for accounting)
     uint256 public totalMockUSDC;
@@ -65,6 +68,9 @@ contract MonadReceiver {
         
         // Trust Base Sepolia (EID 40245)
         trustedSources[40245] = true;
+        
+        // NOTE: Peer address for Agent.sol must be set after deployment
+        // Call setPeer(40245, bytes32(uint256(uint160(agentAddress))))
     }
     
     // ============ RECEIVE BRIDGE & MOCK SWAP ============
@@ -103,6 +109,9 @@ contract MonadReceiver {
         // Only accept from trusted chains (Base Sepolia)
         require(trustedSources[_origin.srcEid], "Untrusted source");
         
+        // SECURITY: Validate sender is the authorized Agent contract
+        require(peers[_origin.srcEid] == _origin.sender, "Untrusted sender");
+            
         // Decode message from Agent.sol
         (
             address user,
@@ -235,6 +244,21 @@ contract MonadReceiver {
     function addTrustedSource(uint32 _srcEid) external {
         require(msg.sender == owner, "Only owner");
         trustedSources[_srcEid] = true;
+    }
+
+    /**
+     * @notice Set peer contract address for a chain
+     * @param _srcEid Source chain endpoint ID
+     * @param _peer Peer contract address (as bytes32)
+     * 
+     * USAGE:
+     * After deploying Agent.sol on Base Sepolia, call:
+     * setPeer(40245, bytes32(uint256(uint160(agentAddress))))
+     */
+    function setPeer(uint32 _srcEid, bytes32 _peer) external {
+        require(msg.sender == owner, "Only owner");
+        require(_peer != bytes32(0), "Invalid peer address");
+        peers[_srcEid] = _peer;
     }
     
     /**
