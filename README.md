@@ -26,7 +26,6 @@ This is a monorepo with:
 
 **Monad Testnet:**
 - MonadReceiver: `0x7490D3B9C22698bEfeEAf2efCC4fA78ffff96e77`
-- LimitOrderAgent: `0x7FbaAA1E70a7D4Efcc0554BDa5416FEAAcacD4A1`
 
 ## Prerequisites
 
