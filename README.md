@@ -22,10 +22,10 @@ This is a monorepo with:
 ## Deployments
 
 **Base Sepolia:**
-- Agent: `0x7FbaAA1E70a7D4Efcc0554BDa5416FEAAcacD4A1`
+- Agent: `0x491F1f797ccD3e0fF9C598e567855f7DEc9dc8A7`
 
 **Monad Testnet:**
-- MonadReceiver: `0x7490D3B9C22698bEfeEAf2efCC4fA78ffff96e77`
+- MonadReceiver: `0x5f278F7B66D2Dc9f86a2fc135ee03FdB639A137B`
 
 ## Prerequisites
 
