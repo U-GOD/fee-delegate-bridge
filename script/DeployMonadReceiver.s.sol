@@ -10,7 +10,7 @@ contract DeployMonadReceiver is Script {
         
         // Deploy MonadReceiver on Monad Testnet
         MonadReceiver receiver = new MonadReceiver(
-            0xFdB631F5EE196F0a101F2B928F4A3Cfc1f57A8a4 // LayerZero V2 Endpoint on Monad Testnet
+            0xfdB631f5ee196F0A101F2B928f4A3CFc1f57A8A4 // LayerZero V2 Endpoint on Monad Testnet
         );
         
         console2.log("MonadReceiver deployed at:", address(receiver));
