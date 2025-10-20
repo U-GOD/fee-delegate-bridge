@@ -23,9 +23,11 @@ This is a monorepo with:
 
 **Base Sepolia:**
 - Agent: `0x491F1f797ccD3e0fF9C598e567855f7DEc9dc8A7`
+- https://sepolia.basescan.org/address/0x491F1f797ccD3e0fF9C598e567855f7DEc9dc8A7
 
 **Monad Testnet:**
 - MonadReceiver: `0x5f278F7B66D2Dc9f86a2fc135ee03FdB639A137B`
+- https://testnet.monadexplorer.com/address/0x5f278F7B66D2Dc9f86a2fc135ee03FdB639A137B
 
 ## Prerequisites
 
